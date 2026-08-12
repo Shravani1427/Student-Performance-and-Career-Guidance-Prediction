@@ -1,9 +1,10 @@
 {
   "name": "nextjs-postgresql-template",
   "private": true,
- "scripts": {
-  "dev": "nodemon server.js",
-  "start": "node server.js"
+  "scripts": {
+    "dev": "nodemon server.js",
+    "build": "echo 'No build step required'",
+    "start": "node server.js"
   },
   "dependencies": {
     "@types/pdfkit": "^0.17.6",
