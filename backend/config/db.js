@@ -7,24 +7,29 @@ const mysql = require("mysql2/promise");
 const dotenv = require("dotenv");
 const path = require("path");
 
-// Load .env.local from the backend folder
+// =====================================================
+// LOAD ENVIRONMENT VARIABLES
+// =====================================================
+
+// Local development: load .env.local
+// Render: environment variables are provided automatically
 dotenv.config({
     path: path.join(__dirname, "..", ".env.local")
 });
 
-// -----------------------------------------------------
-// Check DATABASE_URL
-// -----------------------------------------------------
+// =====================================================
+// CHECK DATABASE_URL
+// =====================================================
 
 if (!process.env.DATABASE_URL) {
     console.error("❌ DATABASE_URL is not defined.");
-    console.error("❌ Please check: backend/.env.local");
+    console.error("❌ Please add DATABASE_URL in Render Environment Variables.");
     process.exit(1);
 }
 
-// -----------------------------------------------------
-// Parse DATABASE_URL
-// -----------------------------------------------------
+// =====================================================
+// PARSE DATABASE_URL
+// =====================================================
 
 let databaseUrl;
 
@@ -32,31 +37,31 @@ try {
     databaseUrl = new URL(process.env.DATABASE_URL);
 } catch (error) {
     console.error("❌ Invalid DATABASE_URL.");
-    console.error("Example:");
     console.error(
-        "DATABASE_URL=mysql://root:password@localhost:3306/student_career_system"
+        "Example: mysql://username:password@host:3306/database"
     );
     process.exit(1);
 }
 
-// -----------------------------------------------------
-// Extract MySQL details
-// -----------------------------------------------------
+// =====================================================
+// EXTRACT MYSQL DETAILS
+// =====================================================
 
 const DB_HOST = databaseUrl.hostname;
 const DB_PORT = Number(databaseUrl.port) || 3306;
 const DB_USER = decodeURIComponent(databaseUrl.username);
 const DB_PASSWORD = decodeURIComponent(databaseUrl.password);
+
 const DB_NAME = decodeURIComponent(
     databaseUrl.pathname.replace("/", "")
 );
 
-// -----------------------------------------------------
-// Display configuration
-// -----------------------------------------------------
+// =====================================================
+// DISPLAY CONFIGURATION
+// =====================================================
 
 console.log("");
-console.log("📁 Environment: development");
+console.log("🌐 Environment:", process.env.RENDER ? "Render" : "Development");
 console.log(`🗄️ Database Host: ${DB_HOST}`);
 console.log(`🗄️ Database Name: ${DB_NAME}`);
 console.log(`👤 Database User: ${DB_USER}`);
@@ -64,27 +69,32 @@ console.log(`🔌 Database Port: ${DB_PORT}`);
 console.log("🔐 Database Password: ********");
 console.log("");
 
-// -----------------------------------------------------
-// Create MySQL connection pool
-// -----------------------------------------------------
+// =====================================================
+// CREATE MYSQL CONNECTION POOL
+// =====================================================
 
 const pool = mysql.createPool({
-    host: DB_HOST,
-    port: DB_PORT,
-    user: DB_USER,
-    password: DB_PASSWORD,
-    database: DB_NAME,
+    host: "mysql-2fe3c041-shravanichavan779-8a7a.k.aivencloud.com",
+    port: 11663,
+    user: avnadmin,
+    password: AVNS_yz4G3mymKylwn4-f_6-,
+    database: defaultdb,
 
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
 
-    charset: "utf8mb4"
+    charset: "utf8mb4",
+
+    // Aiven requires SSL
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
-// -----------------------------------------------------
-// Test MySQL connection
-// -----------------------------------------------------
+// =====================================================
+// TEST MYSQL CONNECTION
+// =====================================================
 
 async function testConnection() {
     let connection;
@@ -95,7 +105,6 @@ async function testConnection() {
         console.log("✅ MySQL connected successfully!");
         console.log(`🗄️ Connected Database: ${DB_NAME}`);
         console.log("");
-
     } catch (error) {
         console.error("");
         console.error("❌ MySQL connection failed");
@@ -104,14 +113,19 @@ async function testConnection() {
 
         if (error.code === "ER_ACCESS_DENIED_ERROR") {
             console.error("🔴 MySQL username/password is incorrect.");
-            console.error("Check DATABASE_URL in backend/.env.local");
         }
 
         if (error.code === "ER_BAD_DB_ERROR") {
             console.error(`🔴 Database "${DB_NAME}" does not exist.`);
-            console.error("Create it in MySQL first.");
         }
 
+        if (error.code === "ENOTFOUND") {
+            console.error("🔴 Database host could not be found.");
+        }
+
+        if (error.code === "ETIMEDOUT") {
+            console.error("🔴 Database connection timed out.");
+        }
     } finally {
         if (connection) {
             connection.release();
@@ -121,8 +135,8 @@ async function testConnection() {
 
 testConnection();
 
-// -----------------------------------------------------
-// Export pool
-// -----------------------------------------------------
+// =====================================================
+// EXPORT POOL
+// =====================================================
 
 module.exports = pool;
