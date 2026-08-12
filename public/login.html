@@ -1,0 +1,517 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Login | Student Performance</title>
+
+
+    <!-- Google Fonts -->
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <!-- CSS -->
+
+    <link
+        rel="stylesheet"
+        href="/css/base.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/auth.css"
+    >
+
+
+    <!-- Register link styling -->
+
+    <style>
+
+        /* =====================================================
+           NEW USER / REGISTER
+        ===================================================== */
+
+        .register-option {
+            width: 100%;
+
+            margin-top: 18px;
+            padding-top: 17px;
+
+            border-top: 1px solid #eeeeee;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+
+            line-height: 1.5;
+        }
+
+
+        .register-option .new-user {
+            color: #777777;
+
+            font-weight: 500;
+        }
+
+
+        .register-option .register-link {
+            display: inline-flex;
+            align-items: center;
+
+            gap: 4px;
+
+            color: #e83e8c;
+
+            font-weight: 700;
+
+            text-decoration: none;
+
+            cursor: pointer;
+
+            transition:
+                color 0.2s ease,
+                transform 0.2s ease;
+        }
+
+
+        .register-option .register-link:hover {
+            color: #c72f76;
+
+            text-decoration: none;
+
+            transform: translateX(2px);
+        }
+
+
+        .register-option .register-arrow {
+            font-size: 15px;
+
+            font-weight: 800;
+
+            transition:
+                transform 0.2s ease;
+        }
+
+
+        .register-option .register-link:hover
+        .register-arrow {
+
+            transform: translateX(3px);
+
+        }
+
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        @media (max-width: 480px) {
+
+            .register-option {
+
+                flex-wrap: wrap;
+
+                gap: 3px;
+
+                font-size: 13px;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =====================================================
+         TOAST
+    ====================================================== -->
+
+    <div
+        id="toast"
+        class="toast"
+    >
+    </div>
+
+
+    <!-- =====================================================
+         LOGIN SCREEN
+    ====================================================== -->
+
+    <section class="login-screen">
+
+
+        <!-- =================================================
+             LEFT SIDE
+        ================================================== -->
+
+        <div class="login-art">
+
+
+            <!-- Back to website -->
+
+            <a
+                class="back-button"
+                href="index.html"
+            >
+                ← Back to website
+            </a>
+
+
+            <!-- Brand -->
+
+            <a
+                class="brand light-brand"
+                href="index.html"
+            >
+
+                <span class="brand-mark">
+                    ◆
+                </span>
+
+
+                <span>
+
+                    <b>
+                        Student Performance &
+                    </b>
+
+                    <strong>
+                        Career Guidance
+                    </strong>
+
+                </span>
+
+            </a>
+
+
+            <!-- Login Message -->
+
+            <div class="login-message">
+
+                <i></i>
+
+
+                <h1>
+
+                    Your Performance
+                    <br>
+                    Shapes Your Future
+
+                </h1>
+
+
+                <p>
+
+                    Track your performance, get career
+                    recommendations and achieve your dream
+                    career with our smart guidance.
+
+                </p>
+
+            </div>
+
+
+            <!-- Login Points -->
+
+            <div class="login-points">
+
+
+                <span>
+
+                    ◎ Track
+                    <br>
+                    Performance
+
+                </span>
+
+
+                <span>
+
+                    ✦ Get Career
+                    <br>
+                    Guidance
+
+                </span>
+
+
+                <span>
+
+                    ★ Achieve
+                    <br>
+                    Success
+
+                </span>
+
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             RIGHT SIDE
+        ================================================== -->
+
+        <div class="login-panel">
+
+
+            <!-- =================================================
+                 LOGIN FORM
+            ================================================== -->
+
+            <form
+                id="login-form"
+                class="login-card"
+            >
+
+
+                <!-- Avatar -->
+
+                <div class="login-avatar">
+                    ♙
+                </div>
+
+
+                <!-- Heading -->
+
+                <h2>
+                    Welcome Back!
+                </h2>
+
+
+                <p>
+                    Login to your account to continue
+                </p>
+
+
+                <!-- =================================================
+                     ROLE SELECTION
+                ================================================== -->
+
+                <div class="role-tabs">
+
+
+                    <button
+                        type="button"
+                        class="selected"
+                        data-role="student"
+                    >
+                        Student Login
+                    </button>
+
+
+                    <button
+                        type="button"
+                        data-role="admin"
+                    >
+                        Administrator
+                    </button>
+
+
+                </div>
+
+
+                <!-- =================================================
+                     EMAIL
+                ================================================== -->
+
+                <label class="input-row">
+
+                    <span>
+                        ✉
+                    </span>
+
+
+                    <input
+                        id="login-email"
+                        type="email"
+                        value=""
+                        placeholder="Email ID"
+                        autocomplete="email"
+                        required
+                    >
+
+                </label>
+
+
+                <!-- =================================================
+                     PASSWORD
+                ================================================== -->
+
+                <label class="input-row">
+
+                    <span>
+                        ⌑
+                    </span>
+
+
+                    <input
+                        id="login-password"
+                        type="password"
+                        value=""
+                        placeholder="Password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+
+                    <button
+                        type="button"
+                        id="toggle-password"
+                        aria-label="Show or hide password"
+                    >
+                        ◌
+                    </button>
+
+                </label>
+
+
+                <!-- =================================================
+                     FORGOT PASSWORD
+                ================================================== -->
+
+                <div class="forgot">
+                    Forgot Password?
+                </div>
+
+
+                <!-- =================================================
+                     LOGIN ERROR
+                ================================================== -->
+
+                <div
+                    id="login-error"
+                    class="error-message hidden"
+                >
+                </div>
+
+
+                <!-- =================================================
+                     LOGIN BUTTON
+                ================================================== -->
+
+                <button
+                    class="button pink submit-button"
+                    type="submit"
+                >
+                    Login
+                </button>
+
+
+                <!-- =================================================
+                     NEW USER / REGISTER
+                ================================================== -->
+
+                <div class="register-option">
+
+                    <span class="new-user">
+                        New user?
+                    </span>
+
+
+                    <a
+                        href="register.html"
+                        class="register-link"
+                    >
+                        Create an account
+                        <span class="register-arrow">
+                            →
+                        </span>
+                    </a>
+
+                </div>
+
+
+                <!-- =================================================
+                     OR
+                ================================================== -->
+
+                <div class="or">
+
+                    <span>
+                        OR
+                    </span>
+
+                </div>
+
+
+                <!-- =================================================
+                     LOGIN NOTE
+                ================================================== -->
+
+                <p class="login-note">
+
+                    Select Student Login or Administrator
+                    above, then enter your own credentials.
+
+                </p>
+
+
+            </form>
+
+
+            <!-- =================================================
+                 FOOTER
+            ================================================== -->
+
+            <footer>
+
+                © 2026 Student Performance &amp;
+                Career Guidance System.
+                All rights reserved.
+
+            </footer>
+
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script src="/js/api.js"></script>
+
+    <script src="/js/login.js"></script>
+
+
+</body>
+
+</html>
+```

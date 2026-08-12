@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en" data-page="attendance" data-role="admin">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Sheet | Admin</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/modules.css">
+
+    <style>
+        :root {
+            --primary-pink: #ff2a75;
+            --primary-pink-hover: #e01b60;
+            --card-radius: 12px;
+            --border-color: #e2e8f0;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-dark);
+            background-color: #f8fafc;
+        }
+
+        .attendance-container { padding: 10px; }
+
+        /* Top Header & Search Bar */
+        .top-bar-card {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: var(--card-radius);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border-color);
+            outline: none;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-pink);
+            box-shadow: 0 0 0 3px rgba(255, 42, 117, 0.15);
+        }
+
+        .btn-pink {
+            background-color: var(--primary-pink);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-pink:hover {
+            background-color: var(--primary-pink-hover);
+        }
+
+        /* Control Partition Grid */
+        .partition-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 16px 20px;
+            border-radius: var(--card-radius);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .month-select {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-weight: 600;
+            outline: none;
+            color: var(--text-dark);
+        }
+
+        .legend-pill {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .st-p { background-color: #e6f4ea; color: #137333; }
+        .st-a { background-color: #fce8e6; color: #c5221f; }
+        .st-hd { background-color: #e8f0fe; color: #1a73e8; }
+        .st-l { background-color: #fef7e0; color: #b06000; }
+
+        /* Matrix Table */
+        .matrix-card {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: var(--card-radius);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .table-scroll-wrapper {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        .attendance-matrix {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .attendance-matrix th, .attendance-matrix td {
+            border: 1px solid #f1f5f9;
+            padding: 8px 4px;
+        }
+
+        .attendance-matrix th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 700;
+            padding: 10px 6px;
+        }
+
+        .sticky-col {
+            position: sticky;
+            background: #fff;
+            z-index: 2;
+            text-align: left !important;
+            padding-left: 12px !important;
+        }
+
+        .col-id { left: 0; min-width: 90px; }
+        .col-name { left: 90px; min-width: 180px; box-shadow: 2px 0 5px rgba(0,0,0,0.03); }
+
+        .date-cell {
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-weight: 700;
+            border-radius: 6px;
+            border: none;
+            transition: transform 0.1s ease;
+        }
+
+        .date-cell:hover { transform: scale(1.1); }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #fff;
+            width: 100%;
+            max-width: 360px;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .modal-btn {
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="toast" class="toast"></div>
+    <div id="app-root">
+        <div id="page-content-source">
+
+            <section class="attendance-container">
+
+                <!-- TOP HEADER & MAIN SEARCH BAR -->
+                <div class="top-bar-card">
+                    <div>
+                        <h2 style="margin: 0; font-size: 24px;">Student Attendance Sheet</h2>
+                        <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 13px;">
+                            Search by student name or ID to view or mark attendance.
+                        </p>
+                    </div>
+
+                    <!-- SEARCH BAR -->
+                    <div class="search-wrapper">
+                        <input
+                            type="text"
+                            id="searchStudentInput"
+                            class="search-input"
+                            placeholder="🔍 Search by Name or Student ID..."
+                            oninput="filterAndRenderTable()"
+                        >
+                    </div>
+
+                    <!-- DOWNLOAD REPORT BUTTON -->
+                    <button class="btn-pink" onclick="downloadAttendanceReport()">
+                        📥 Download Report
+                    </button>
+                </div>
+
+                <!-- MONTH PARTITION & FUNCTION LEGEND -->
+                <div class="partition-grid">
+                    <div>
+                        <label style="font-weight: 700; font-size: 13px; color: var(--text-muted);">SELECT MONTH: </label>
+                        <select id="monthSelect" class="month-select" onchange="generateMonthColumns()">
+                            <!-- Generated dynamically 2024 to 2030 -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <span class="legend-pill st-p">P = Present</span>
+                        <span class="legend-pill st-a">A = Absent</span>
+                        <span class="legend-pill st-hd">HD = Half Day</span>
+                        <span class="legend-pill st-l">L = Leave</span>
+                    </div>
+                </div>
+
+                <!-- FULL MONTH ATTENDANCE MATRIX TABLE -->
+                <div class="matrix-card">
+                    <div class="table-scroll-wrapper">
+                        <table class="attendance-matrix">
+                            <thead>
+                                <tr id="tableHeaderRow">
+                                    <th class="sticky-col col-id">ID</th>
+                                    <th class="sticky-col col-name">Student Name</th>
+                                    <!-- Dynamic month days 1 to 31 -->
+                                    <th>Total P</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceMatrixBody">
+                                <!-- Student Attendance Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+    </div>
+
+    <!-- ATTENDANCE STATUS MODAL -->
+    <div id="statusModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin: 0; color: #1e293b;" id="modalStudentTitle">Mark Attendance</h3>
+            <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;" id="modalDateTitle">Select Status</p>
+
+            <div class="modal-grid">
+                <button class="modal-btn st-p" onclick="selectStatus('P')">P - Present</button>
+                <button class="modal-btn st-a" onclick="selectStatus('A')">A - Absent</button>
+                <button class="modal-btn st-hd" onclick="selectStatus('HD')">HD - Half Day</button>
+                <button class="modal-btn st-l" onclick="selectStatus('L')">L - Leave</button>
+            </div>
+
+            <button onclick="closeModal()" style="margin-top: 15px; background: transparent; border: none; color: #94a3b8; font-weight: 600; cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- SYSTEM SCRIPTS -->
+    <script src="/js/api.js"></script>
+    <script src="/js/layout.js"></script>
+
+    <!-- ATTENDANCE ENGINE SCRIPT -->
+    <script>
+        let totalDays = 31;
+        let activeStudentIndex = null;
+        let activeDay = null;
+        let processedStudents = [];
+
+        // 1. POPULATE MONTH & YEAR SELECTOR (2024 to 2030)
+        function initMonthSelector() {
+            const monthSelect = document.getElementById("monthSelect");
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+            monthSelect.innerHTML = "";
+
+            for (let year = 2024; year <= 2030; year++) {
+                for (let m = 0; m < 12; m++) {
+                    const opt = document.createElement("option");
+                    opt.value = `${year}-${m + 1}`;
+                    opt.innerText = `${monthNames[m]} ${year}`;
+                    
+                    if (year === 2026 && m === 7) opt.selected = true; // Default to August 2026
+                    monthSelect.appendChild(opt);
+                }
+            }
+        }
+
+        // 2. EXTRACT LIVE STUDENTS FROM GLOBAL APP SYSTEM
+        function syncStudentsFromApp() {
+            let rawList = [];
+
+            // Access main App data loaded by layout.js
+            if (window.App && Array.isArray(window.App.data?.students)) {
+                rawList = window.App.data.students;
+            } else {
+                // Fallback storage check
+                const storageKeys = ["studentsList", "students", "app_students"];
+                for (let k of storageKeys) {
+                    const stored = localStorage.getItem(k);
+                    if (stored) {
+                        try { rawList = JSON.parse(stored); break; } catch(e){}
+                    }
+                }
+            }
+
+            // Fallback default list if completely empty
+            if (!Array.isArray(rawList) || rawList.length === 0) {
+                rawList = [
+                    { studentCode: "STU-0008", name: "Nutan More" },
+                    { studentCode: "STU-0007", name: "Shruti Mhatre" },
+                    { studentCode: "STU-0006", name: "Tejashree Patil" },
+                    { studentCode: "STU-0005", name: "Purvesh Dilip More" },
+                    { studentCode: "STU-0003", name: "Shravani Chavan" }
+                ];
+            }
+
+            // Load saved attendance matrix
+            const storedAttendance = JSON.parse(localStorage.getItem("app_attendance_matrix") || "{}");
+
+            // Normalize records matching students.js properties
+            processedStudents = rawList.map((s, idx) => {
+                const name = s.name || s.fullName || s.student_name || "Unknown Student";
+                const studentCode = s.studentCode || s.id || s.student_id || `STU-000${idx + 1}`;
+                const attendance = storedAttendance[studentCode] || s.attendance || {};
+
+                for (let d = 1; d <= 31; d++) {
+                    if (!attendance[d]) attendance[d] = "P";
+                }
+
+                return { studentCode, name, attendance };
+            });
+
+            generateMonthColumns();
+        }
+
+        // 3. GENERATE TABLE COLUMNS ACCORDING TO SELECTED MONTH
+        function generateMonthColumns() {
+            const headerRow = document.getElementById("tableHeaderRow");
+            const [year, month] = document.getElementById("monthSelect").value.split("-").map(Number);
+
+            totalDays = new Date(year, month, 0).getDate();
+            
+            headerRow.innerHTML = `
+                <th class="sticky-col col-id">ID</th>
+                <th class="sticky-col col-name">Student Name</th>
+            `;
+
+            for (let day = 1; day <= totalDays; day++) {
+                const th = document.createElement("th");
+                th.innerText = day < 10 ? `0${day}` : `${day}`;
+                th.style.minWidth = "36px";
+                headerRow.appendChild(th);
+            }
+
+            headerRow.innerHTML += `<th>Total P</th><th>%</th>`;
+            filterAndRenderTable();
+        }
+
+        // 4. DUAL SEARCH FILTER (BY NAME OR STUDENT ID)
+        function filterAndRenderTable() {
+            const query = document.getElementById("searchStudentInput").value.toLowerCase().trim();
+            const tbody = document.getElementById("attendanceMatrixBody");
+            tbody.innerHTML = "";
+
+            const filteredData = processedStudents.filter(s => 
+                s.name.toLowerCase().includes(query) || 
+                s.studentCode.toLowerCase().includes(query)
+            );
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${totalDays + 4}" style="padding:20px; color:#94a3b8; font-weight:600;">No matching student found.</td></tr>`;
+                return;
+            }
+
+            filteredData.forEach((student) => {
+                const realIndex = processedStudents.findIndex(s => s.studentCode === student.studentCode);
+                const tr = document.createElement("tr");
+                let presentCount = 0;
+
+                let html = `
+                    <td class="sticky-col col-id" style="font-weight:600; color:#64748b;">${student.studentCode}</td>
+                    <td class="sticky-col col-name" style="font-weight:700;">${student.name}</td>
+                `;
+
+                for (let day = 1; day <= totalDays; day++) {
+                    const status = student.attendance[day] || "P";
+                    let cssClass = "st-p";
+
+                    if (status === "P") { cssClass = "st-p"; presentCount++; }
+                    else if (status === "A") cssClass = "st-a";
+                    else if (status === "HD") { cssClass = "st-hd"; presentCount += 0.5; }
+                    else if (status === "L") cssClass = "st-l";
+
+                    html += `
+                        <td>
+                            <button 
+                                class="date-cell ${cssClass}" 
+                                onclick="openStatusModal(${realIndex}, ${day})"
+                            >
+                                ${status}
+                            </button>
+                        </td>
+                    `;
+                }
+
+                const percentage = Math.round((presentCount / totalDays) * 100);
+
+                html += `
+                    <td style="font-weight:700;">${presentCount}</td>
+                    <td style="font-weight:700; color:${percentage >= 75 ? '#137333' : '#c5221f'};">${percentage}%</td>
+                `;
+
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 5. DOWNLOAD CSV ATTENDANCE REPORT
+        function downloadAttendanceReport() {
+            const monthText = document.getElementById("monthSelect").options[document.getElementById("monthSelect").selectedIndex].text;
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            let headers = ["Student ID", "Student Name"];
+            for (let d = 1; d <= totalDays; d++) {
+                headers.push(`Day ${d}`);
+            }
+            headers.push("Total Present", "Percentage");
+            csvContent += headers.join(",") + "\n";
+
+            const query = document.getElementById("searchStudentInput").value.toLowerCase().trim();
+            const filteredData = processedStudents.filter(s => 
+                s.name.toLowerCase().includes(query) || 
+                s.studentCode.toLowerCase().includes(query)
+            );
+
+            filteredData.forEach(student => {
+                let row = [`"${student.studentCode}"`, `"${student.name}"`];
+                let presentCount = 0;
+
+                for (let d = 1; d <= totalDays; d++) {
+                    const st = student.attendance[d] || "P";
+                    row.push(st);
+                    if (st === "P") presentCount++;
+                    if (st === "HD") presentCount += 0.5;
+                }
+
+                const pct = Math.round((presentCount / totalDays) * 100) + "%";
+                row.push(presentCount, pct);
+                csvContent += row.join(",") + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Attendance_Report_${monthText.replace(" ", "_")}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 6. MODAL HELPERS
+        function openStatusModal(studentIdx, day) {
+            if (studentIdx === -1) return;
+            activeStudentIndex = studentIdx;
+            activeDay = day;
+
+            const student = processedStudents[studentIdx];
+            document.getElementById("modalStudentTitle").innerText = student.name;
+            document.getElementById("modalDateTitle").innerText = `Set status for Day ${day < 10 ? '0' + day : day}`;
+
+            document.getElementById("statusModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("statusModal").style.display = "none";
+        }
+
+        function selectStatus(status) {
+            if (activeStudentIndex !== null && activeDay !== null) {
+                processedStudents[activeStudentIndex].attendance[activeDay] = status;
+                
+                // Save attendance
+                const mapToSave = {};
+                processedStudents.forEach(st => mapToSave[st.studentCode] = st.attendance);
+                localStorage.setItem("app_attendance_matrix", JSON.stringify(mapToSave));
+
+                filterAndRenderTable();
+            }
+            closeModal();
+        }
+
+        // INITIALIZE WHEN SYSTEM IS READY
+        initMonthSelector();
+
+        if (window.App && typeof App.onReady === 'function') {
+            App.onReady(() => syncStudentsFromApp());
+        } else {
+            document.addEventListener("DOMContentLoaded", () => {
+                setTimeout(syncStudentsFromApp, 300);
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html
+    lang="en"
+    data-page="subjects"
+    data-role="admin"
+>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Subjects Management | Admin</title>
+
+    <!-- Main CSS -->
+    <link
+        rel="stylesheet"
+        href="/css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/layout.css"
+    >
+
+</head>
+
+<body>
+
+    <!-- =====================================================
+         APP ROOT
+    ====================================================== -->
+
+    <div id="app-root">
+
+        <!-- =================================================
+             IMPORTANT: DO NOT REMOVE THIS ID
+        ================================================== -->
+
+        <div id="page-content-source">
+
+            <!-- =================================================
+                 SUBJECTS PAGE
+            ================================================== -->
+
+            <section class="subjects-page">
+
+                <div class="page-header">
+
+                    <div>
+                        <h1>Subjects Management</h1>
+
+                        <p>
+                            Add, edit and manage student subjects.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="scrollAddBtn"
+                        class="btn btn-primary"
+                    >
+                        + Add Subject
+                    </button>
+
+                </div>
+
+
+                <!-- =================================================
+                     SUBJECT FORM
+                ================================================== -->
+
+                <div
+                    id="subjectFormCard"
+                    class="sp-card"
+                >
+
+                    <div class="sp-card-head">
+
+                        <div>
+
+                            <h3 id="formTitle">
+                                Add a Subject
+                            </h3>
+
+                            <p id="formMode">
+                                Enter subject details below.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <form id="subjectForm">
+
+                        <!-- Hidden ID input for Edit mode -->
+                        <input
+                            type="hidden"
+                            id="editId"
+                        >
+
+
+                        <div class="form-grid">
+
+                            <div class="form-group">
+
+                                <label for="sName">
+                                    Subject Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="sName"
+                                    name="subject_name"
+                                    placeholder="Enter subject name"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="sCode">
+                                    Subject Code
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="sCode"
+                                    name="subject_code"
+                                    placeholder="Enter subject code"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="sSemester">
+                                    Semester
+                                </label>
+
+                                <select
+                                    id="sSemester"
+                                    name="semester"
+                                    required
+                                >
+
+                                    <option value="">
+                                        Select Semester
+                                    </option>
+
+                                    <option value="1">Semester 1</option>
+                                    <option value="2">Semester 2</option>
+                                    <option value="3">Semester 3</option>
+                                    <option value="4">Semester 4</option>
+                                    <option value="5">Semester 5</option>
+                                    <option value="6">Semester 6</option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="tMax">
+                                    Maximum Marks
+                                </label>
+
+                                <input
+                                    type="number"
+                                    id="tMax"
+                                    name="max_marks"
+                                    value="100"
+                                    min="1"
+                                    required
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-actions">
+
+                            <button
+                                type="submit"
+                                id="saveBtn"
+                                class="btn btn-primary"
+                            >
+                                Save Subject
+                            </button>
+
+                            <button
+                                type="button"
+                                id="resetBtn"
+                                class="btn btn-secondary"
+                            >
+                                Cancel
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+
+                <!-- =================================================
+                     SUBJECT LIST
+                ================================================== -->
+
+                <div id="subjectTableWrapper" class="sp-card">
+
+                    <div class="sp-card-head">
+
+                        <div>
+
+                            <h3>
+                                All Subjects
+                            </h3>
+
+                            <p id="listMeta">
+                                Manage subjects available in the system.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="table-wrapper">
+
+                        <table
+                            class="data-table"
+                            id="subjectsTable"
+                        >
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>#</th>
+                                    <th>Subject Name</th>
+                                    <th>Subject Code</th>
+                                    <th>Category</th>
+                                    <th>Semester</th>
+                                    <th>Department</th>
+                                    <th>Marks</th>
+                                    <th>Credits</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody id="subjectTableBody">
+
+                                <tr>
+
+                                    <td
+                                        colspan="10"
+                                        style="text-align:center;"
+                                    >
+                                        Loading subjects...
+                                    </td>
+
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script src="/js/api.js"></script>
+
+    <script src="/js/layout.js"></script>
+
+    <script src="/js/admin-subjects.js"></script>
+
+</body>
+
+</html>

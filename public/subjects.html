@@ -1,0 +1,818 @@
+```html
+<!DOCTYPE html>
+<html lang="en"
+      data-page="subjects"
+      data-role="any">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Subjects | Student Performance & Career Guidance System</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/subjects.css">
+</head>
+
+<body>
+
+<div id="app-root"></div>
+
+<!-- =====================================================
+     SUBJECT PAGE CONTENT
+     layout.js moves this into #page-content
+====================================================== -->
+
+<template id="subjects-template">
+
+    <section class="subjects-page">
+
+        <!-- =================================================
+             ADMIN SUBJECT MANAGEMENT
+        ================================================== -->
+
+        <div id="adminSubjects" style="display:none;">
+
+            <div class="page-heading">
+                <div>
+                    <h1>Subjects</h1>
+                    <p>
+                        Add, edit and delete subjects and marks
+                        for students.
+                    </p>
+                </div>
+            </div>
+
+
+            <!-- STUDENT SELECTOR -->
+
+            <div class="sp-card">
+
+                <div class="sp-card-head">
+
+                    <div>
+                        <h3>Select Student</h3>
+
+                        <p>
+                            Choose the student whose subject
+                            marks you want to manage.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="admin-student-row">
+
+                    <div class="sp-field">
+
+                        <label for="studentSelect">
+                            Student
+                        </label>
+
+                        <select
+                            id="studentSelect"
+                            class="sp-select">
+
+                            <option value="">
+                                Select a student
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ADD / EDIT SUBJECT -->
+
+            <div class="sp-card">
+
+                <div class="sp-card-head">
+
+                    <div class="subject-heading">
+
+                        <div class="sp-ico">
+                            ＋
+                        </div>
+
+                        <div>
+
+                            <h3 id="formTitle">
+                                Add a Subject
+                            </h3>
+
+                            <p>
+                                Enter marks obtained and
+                                maximum marks.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    <span
+                        class="sp-chip"
+                        id="formMode">
+                        New entry
+                    </span>
+
+                </div>
+
+
+                <form
+                    id="subjectForm"
+                    class="sp-form-grid"
+                    autocomplete="off">
+
+                    <input
+                        type="hidden"
+                        id="editId">
+
+
+                    <!-- SUBJECT NAME -->
+
+                    <div class="sp-field sp-s5">
+
+                        <label for="sName">
+                            Subject name
+                        </label>
+
+                        <input
+                            class="sp-input"
+                            type="text"
+                            id="sName"
+                            list="subjectSuggestions"
+                            placeholder="e.g. Database Management"
+                            required>
+
+                        <datalist id="subjectSuggestions">
+
+                            <option>
+                                Mathematics
+                            </option>
+
+                            <option>
+                                Physics
+                            </option>
+
+                            <option>
+                                Chemistry
+                            </option>
+
+                            <option>
+                                Computer Science
+                            </option>
+
+                            <option>
+                                Data Structures
+                            </option>
+
+                            <option>
+                                Database Management
+                            </option>
+
+                            <option>
+                                Operating Systems
+                            </option>
+
+                            <option>
+                                Web Development
+                            </option>
+
+                            <option>
+                                English
+                            </option>
+
+                        </datalist>
+
+                    </div>
+
+
+                    <!-- CATEGORY -->
+
+                    <div class="sp-field sp-s3">
+
+                        <label for="sCategory">
+                            Category
+                        </label>
+
+                        <select
+                            class="sp-select"
+                            id="sCategory">
+
+                            <option value="Core">
+                                Core
+                            </option>
+
+                            <option value="Elective">
+                                Elective
+                            </option>
+
+                            <option value="Lab">
+                                Lab / Practical
+                            </option>
+
+                            <option value="Language">
+                                Language
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- SEMESTER -->
+
+                    <div class="sp-field sp-s4">
+
+                        <label for="sSemester">
+                            Semester
+                        </label>
+
+                        <select
+                            class="sp-select"
+                            id="sSemester">
+
+                            <option value="1">
+                                Semester 1
+                            </option>
+
+                            <option value="2">
+                                Semester 2
+                            </option>
+
+                            <option value="3">
+                                Semester 3
+                            </option>
+
+                            <option value="4">
+                                Semester 4
+                            </option>
+
+                            <option value="5">
+                                Semester 5
+                            </option>
+
+                            <option value="6">
+                                Semester 6
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- THEORY -->
+
+                    <div class="sp-s4">
+
+                        <div class="sp-mark-box">
+
+                            <div class="sp-mb-title">
+
+                                <i
+                                    class="sp-dot theory">
+                                </i>
+
+                                Theory Marks
+
+                            </div>
+
+                            <div class="sp-of">
+
+                                <input
+                                    class="sp-input"
+                                    type="number"
+                                    id="tObt"
+                                    min="0"
+                                    placeholder="Obtained">
+
+                                <span>out of</span>
+
+                                <input
+                                    class="sp-input"
+                                    type="number"
+                                    id="tMax"
+                                    min="1"
+                                    value="100">
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ASSIGNMENT -->
+
+                    <div class="sp-s4">
+
+                        <div class="sp-mark-box">
+
+                            <div class="sp-mb-title">
+
+                                <i
+                                    class="sp-dot assignment">
+                                </i>
+
+                                Assignment Marks
+
+                            </div>
+
+                            <div class="sp-of">
+
+                                <input
+                                    class="sp-input"
+                                    type="number"
+                                    id="aObt"
+                                    min="0"
+                                    placeholder="Obtained">
+
+                                <span>out of</span>
+
+                                <input
+                                    class="sp-input"
+                                    type="number"
+                                    id="aMax"
+                                    min="1"
+                                    value="25">
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- PRACTICAL -->
+
+                    <div class="sp-s4">
+
+                        <div class="sp-mark-box">
+
+                            <div class="sp-mb-title">
+
+                                <i
+                                    class="sp-dot practical">
+                                </i>
+
+                                Practical Marks
+
+                            </div>
+
+                            <div class="sp-of">
+
+                                <input
+                                    class="sp-input"
+                                    type="number"
+                                    id="pObt"
+                                    min="0"
+                                    placeholder="Obtained">
+
+                                <span>out of</span>
+
+                                <input
+                                    class="sp-input"
+                                    type="number"
+                                    id="pMax"
+                                    min="1"
+                                    value="50">
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- LIVE TOTAL -->
+
+                    <div class="sp-live">
+
+                        <div>
+                            <span>Total obtained</span>
+                            <b id="liveObt">0</b>
+                        </div>
+
+                        <div>
+                            <span>Total marks</span>
+                            <b id="liveMax">175</b>
+                        </div>
+
+                        <div>
+                            <span>Percentage</span>
+                            <b id="livePct">0%</b>
+                        </div>
+
+                        <div>
+                            <span>Grade</span>
+                            <b id="liveGrade">–</b>
+                        </div>
+
+
+                        <div class="sp-live-actions">
+
+                            <button
+                                type="button"
+                                class="sp-btn-lg sp-btn-line"
+                                id="resetBtn">
+
+                                Reset
+
+                            </button>
+
+                            <button
+                                type="submit"
+                                class="sp-btn-lg sp-btn-primary"
+                                id="saveBtn">
+
+                                Save Subject
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+
+            <!-- SUBJECT LIST -->
+
+            <div class="sp-toolbar">
+
+                <h2>Subject List</h2>
+
+                <span
+                    class="sp-chip"
+                    id="listMeta">
+                    0 subjects
+                </span>
+
+                <div class="sp-spacer"></div>
+
+                <select
+                    class="sp-mini-btn"
+                    id="sortBy">
+
+                    <option value="added">
+                        Recently added
+                    </option>
+
+                    <option value="high">
+                        Highest score
+                    </option>
+
+                    <option value="low">
+                        Lowest score
+                    </option>
+
+                    <option value="name">
+                        Name A-Z
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div
+                class="sp-list"
+                id="subjectList">
+
+                <div class="empty-state">
+                    Select a student to view subjects.
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             STUDENT SUBJECT VIEW
+        ================================================== -->
+
+        <div id="studentSubjects" style="display:none;">
+
+            <div class="page-heading">
+
+                <div>
+
+                    <h1>My Subjects</h1>
+
+                    <p>
+                        View your subjects, marks and
+                        performance.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- KPI -->
+
+            <div class="sp-kpis">
+
+                <div class="sp-kpi">
+
+                    <div class="sp-k-ico pink">
+                        🎓
+                    </div>
+
+                    <div>
+
+                        <span>Overall Score</span>
+
+                        <b id="kpiPct">
+                            0<i>%</i>
+                        </b>
+
+                        <small id="kpiMarks">
+                            0 / 0 marks
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="sp-kpi">
+
+                    <div class="sp-k-ico purple">
+                        🏆
+                    </div>
+
+                    <div>
+
+                        <span>Grade</span>
+
+                        <b id="kpiGrade">
+                            –
+                        </b>
+
+                        <small id="kpiGradeTxt">
+                            Add subjects to begin
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="sp-kpi">
+
+                    <div class="sp-k-ico blue">
+                        📚
+                    </div>
+
+                    <div>
+
+                        <span>Subjects</span>
+
+                        <b id="kpiSubs">
+                            0
+                        </b>
+
+                        <small id="kpiPass">
+                            0 passed
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="sp-kpi">
+
+                    <div class="sp-k-ico green">
+                        📈
+                    </div>
+
+                    <div>
+
+                        <span>Best Subject</span>
+
+                        <b
+                            id="kpiBest"
+                            class="best-subject">
+                            –
+                        </b>
+
+                        <small id="kpiBestPct">
+                            –
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- SUBJECT TABLE -->
+
+            <div class="sp-card">
+
+                <div class="sp-card-head">
+
+                    <div>
+
+                        <h3>
+                            My Subject Marks
+                        </h3>
+
+                        <p>
+                            Marks entered by your
+                            administrator.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="student-subject-table-wrap">
+
+                    <table
+                        class="student-subject-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Subject
+                                </th>
+
+                                <th>
+                                    Category
+                                </th>
+
+                                <th>
+                                    Semester
+                                </th>
+
+                                <th>
+                                    Theory
+                                </th>
+
+                                <th>
+                                    Assignment
+                                </th>
+
+                                <th>
+                                    Practical
+                                </th>
+
+                                <th>
+                                    Total
+                                </th>
+
+                                <th>
+                                    Percentage
+                                </th>
+
+                                <th>
+                                    Grade
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody
+                            id="studentSubjectRows">
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- PERFORMANCE CHARTS -->
+
+            <div class="sp-grid">
+
+                <div class="sp-card sp-c-4">
+
+                    <div class="sp-card-head">
+
+                        <div>
+
+                            <h3>
+                                Overall Performance
+                            </h3>
+
+                            <p>
+                                Average of all subjects
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    <div class="sp-donut-center">
+
+                        <svg
+                            id="chartDonut"
+                            class="sp-chart"
+                            viewBox="0 0 260 220">
+                        </svg>
+
+                    </div>
+
+                    <div
+                        class="sp-legend"
+                        id="donutLegend">
+                    </div>
+
+                </div>
+
+
+                <div class="sp-card sp-c-8">
+
+                    <div class="sp-card-head">
+
+                        <div>
+
+                            <h3>
+                                Subject-wise Percentage
+                            </h3>
+
+                            <p>
+                                Your score in each subject
+                            </p>
+
+                        </div>
+
+                        <span class="sp-chip">
+                            Pass mark 40%
+                        </span>
+
+                    </div>
+
+                    <svg
+                        id="chartBars"
+                        class="sp-chart"
+                        viewBox="0 0 720 300">
+                    </svg>
+
+                </div>
+
+
+                <div class="sp-card sp-c-12">
+
+                    <div class="sp-card-head">
+
+                        <div>
+
+                            <h3>
+                                Marks Breakdown
+                            </h3>
+
+                            <p>
+                                Theory, assignment and
+                                practical marks
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    <svg
+                        id="chartGrouped"
+                        class="sp-chart"
+                        viewBox="0 0 980 320">
+                    </svg>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</template>
+
+
+<script src="/js/api.js"></script>
+<script src="/js/layout.js"></script>
+<script src="/js/subjects.js"></script>
+
+</body>
+</html>
+```

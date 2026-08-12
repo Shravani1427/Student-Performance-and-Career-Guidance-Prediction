@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Student Performance & Career Guidance
+    </title>
+
+
+    <!-- Google Font -->
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <!-- CSS FILES FROM YOUR /public/css DIRECTORY -->
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/landing.css">
+    <link rel="stylesheet" href="/css/style.css">
+
+
+    <!-- STYLING FOR NEW SECTIONS (FIXED CONTRAST & VISIBILITY) -->
+    <style>
+        /* Process, Benefits & FAQ Section Styling */
+        .how-it-works-section,
+        .portal-benefits-section,
+        .faq-section {
+          padding: 70px 20px;
+          color: #0f172a; /* Dark readable text */
+        }
+
+        .how-it-works-container,
+        .benefits-card,
+        .faq-container {
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+
+        .how-it-works-container {
+          text-align: center;
+        }
+
+        .section-title {
+          font-size: 2.2rem;
+          font-weight: 800;
+          margin-top: 10px;
+          margin-bottom: 12px;
+          color: #0f172a !important; /* Fixed: Visible Dark Text */
+        }
+
+        .section-description {
+          color: #475569 !important; /* Fixed: Visible Dark Muted Text */
+          max-width: 650px;
+          margin: 0 auto 50px auto;
+          font-size: 1rem;
+          line-height: 1.6;
+        }
+
+        /* Steps Grid */
+        .steps-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 28px;
+        }
+
+        .step-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+          border-radius: 20px;
+          padding: 32px 28px;
+          text-align: left;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .step-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-number {
+          font-size: 2.2rem;
+          font-weight: 900;
+          display: block;
+          margin-bottom: 12px;
+        }
+
+        .step-pink { color: #e11d48; }
+        .step-purple { color: #7c3aed; }
+        .step-blue { color: #0284c7; }
+
+        .step-card h3 {
+          font-size: 1.3rem;
+          font-weight: 700;
+          margin-bottom: 10px;
+          color: #0f172a !important;
+        }
+
+        .step-card p {
+          color: #475569 !important;
+          font-size: 0.95rem;
+          line-height: 1.6;
+          margin: 0;
+        }
+
+        /* Benefits Card */
+        .benefits-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+          border-radius: 24px;
+          padding: 50px 40px;
+        }
+
+        .benefits-header {
+          text-align: center;
+          margin-bottom: 40px;
+        }
+
+        .benefits-header h2 {
+          font-size: 2rem;
+          font-weight: 800;
+          margin-bottom: 8px;
+          color: #0f172a !important;
+        }
+
+        .benefits-header p {
+          color: #475569 !important;
+        }
+
+        .benefits-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 24px;
+        }
+
+        .benefit-item {
+          padding: 10px;
+        }
+
+        .benefit-item h4 {
+          font-size: 1.15rem;
+          font-weight: 700;
+          margin-bottom: 8px;
+        }
+
+        .benefit-item p {
+          color: #475569 !important;
+          font-size: 0.92rem;
+          line-height: 1.5;
+          margin: 0;
+        }
+
+        .pink-text { color: #e11d48; }
+        .purple-text { color: #7c3aed; }
+        .blue-text { color: #0284c7; }
+
+        /* FAQ Section */
+        .faq-container {
+          max-width: 800px;
+        }
+
+        .faq-container h2 {
+          text-align: center;
+          font-size: 2rem;
+          font-weight: 800;
+          margin-bottom: 36px;
+          color: #0f172a !important;
+        }
+
+        .faq-list {
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+
+        .faq-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+          border-radius: 14px;
+          padding: 24px;
+        }
+
+        .faq-card h4 {
+          font-size: 1.1rem;
+          font-weight: 700;
+          margin-bottom: 8px;
+          color: #0f172a !important;
+        }
+
+        .faq-card p {
+          color: #475569 !important;
+          font-size: 0.95rem;
+          line-height: 1.6;
+          margin: 0;
+        }
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <header class="site-header">
+
+
+        <!-- BRAND -->
+
+        <a
+            class="brand"
+            href="/index.html"
+        >
+
+            <span class="brand-mark">
+                ◆
+            </span>
+
+            <span>
+
+                <b>
+                    Student Performance &
+                </b>
+
+                <strong>
+                    Career Guidance
+                </strong>
+
+            </span>
+
+        </a>
+
+
+        <!-- NAVIGATION -->
+
+        <nav class="site-nav">
+
+            <a
+                class="active"
+                href="/index.html"
+            >
+                Home
+            </a>
+
+            <a href="/about.html">
+                About Us
+            </a>
+
+            <a href="/performance-info.html">
+                Performance
+            </a>
+
+            <a href="/career-guidance-info.html">
+                Career Guidance
+            </a>
+
+            <a href="/complaints.html">
+                Complaints
+            </a>
+
+        </nav>
+
+
+        <!-- HEADER ACTIONS -->
+
+        <div class="header-actions">
+
+
+            <!-- LOGIN BUTTON -->
+
+            <a
+                class="button outline"
+                href="/login.html"
+            >
+                ⇥ Login
+            </a>
+
+
+            <!-- REGISTER BUTTON -->
+
+            <a
+                class="button pink"
+                href="/register.html"
+            >
+                ♙ Register
+            </a>
+
+
+        </div>
+
+
+        <!-- MOBILE MENU -->
+
+        <button
+            class="mobile-menu"
+            type="button"
+            aria-label="Open menu"
+        >
+            ☰
+        </button>
+
+
+    </header>
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+    ====================================================== -->
+
+    <main>
+
+
+        <!-- =================================================
+             HERO SECTION
+        ================================================== -->
+
+        <section
+            id="home"
+            class="hero"
+        >
+
+
+            <!-- HERO TEXT -->
+
+            <div class="hero-copy">
+
+
+                <span class="eyebrow-pill">
+
+                    Plan Your Today,
+                    Achieve Your Tomorrow 🚀
+
+                </span>
+
+
+                <h1>
+
+                    Shape Your Performance,
+
+                    <br>
+
+                    Build Your
+                    <em>
+                        Future
+                    </em>
+
+                </h1>
+
+
+                <p>
+
+                    Track your academic performance,
+                    discover the right career path and
+                    achieve your dreams with smart guidance.
+
+                </p>
+
+
+                <!-- HERO BUTTONS -->
+
+                <div class="hero-actions">
+
+
+                    <!-- GET STARTED -->
+
+                    <a
+                        class="button pink large"
+                        href="/login.html"
+                    >
+                        Get Started →
+                    </a>
+
+
+                    <!-- EXPLORE CAREERS -->
+
+                    <a
+                        class="button ghost large"
+                        href="#features"
+                    >
+                        Explore Careers →
+                    </a>
+
+
+                </div>
+
+
+                <!-- HERO STATISTICS -->
+
+                <div class="hero-stat-row">
+
+
+                    <span>
+
+                        <b>
+                            ♣
+                        </b>
+
+                        <strong>
+                            10K+
+                        </strong>
+
+                        <small>
+                            Students
+                        </small>
+
+                    </span>
+
+
+                    <i></i>
+
+
+                    <span>
+
+                        <b>
+                            ▥
+                        </b>
+
+                        <strong>
+                            50+
+                        </strong>
+
+                        <small>
+                            Careers
+                        </small>
+
+                    </span>
+
+
+                    <i></i>
+
+
+                    <span>
+
+                        <b>
+                            ✦
+                        </b>
+
+                        <strong>
+                            95%
+                        </strong>
+
+                        <small>
+                            Success Rate
+                        </small>
+
+                    </span>
+
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =================================================
+                 HERO VISUAL
+            ================================================== -->
+
+            <div class="hero-visual">
+
+
+                <div class="hero-orbit"></div>
+
+                <div class="hero-circle"></div>
+
+
+                <!-- STUDENT IMAGE -->
+
+                <img
+                    src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80"
+                    alt="Student holding books"
+                >
+
+
+                <!-- PERFORMANCE CARD -->
+
+                <div
+                    class="floating-card score-card"
+                >
+
+                    <span>
+                        Performance
+                    </span>
+
+
+                    <div class="ring">
+
+                        <b>
+                            85%
+                        </b>
+
+                    </div>
+
+
+                    <small>
+                        Overall Score
+                    </small>
+
+                </div>
+
+
+                <!-- CAREER PREDICTION CARD -->
+
+                <div
+                    class="floating-card prediction-card"
+                >
+
+                    <span>
+                        Career Prediction
+                    </span>
+
+
+                    <b>
+                        Data Analyst
+                    </b>
+
+
+                    <strong>
+                        92% Match
+                    </strong>
+
+
+                    <i>
+                        ╱╲╱╱
+                    </i>
+
+                </div>
+
+
+                <!-- SKILLS CARD -->
+
+                <div
+                    class="floating-card skills-card"
+                >
+
+                    <span>
+                        Skills
+                    </span>
+
+
+                    <label>
+
+                        Python
+
+                        <i>
+                            <b style="width:90%"></b>
+                        </i>
+
+                        <strong>
+                            90%
+                        </strong>
+
+                    </label>
+
+
+                    <label>
+
+                        Data Analysis
+
+                        <i>
+                            <b style="width:87%"></b>
+                        </i>
+
+                        <strong>
+                            87%
+                        </strong>
+
+                    </label>
+
+
+                    <label>
+
+                        SQL
+
+                        <i>
+                            <b style="width:82%"></b>
+                        </i>
+
+                        <strong>
+                            82%
+                        </strong>
+
+                    </label>
+
+
+                    <label>
+
+                        Communication
+
+                        <i>
+                            <b style="width:78%"></b>
+                        </i>
+
+                        <strong>
+                            78%
+                        </strong>
+
+                    </label>
+
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             FEATURES
+        ================================================== -->
+
+        <section
+            id="features"
+            class="feature-grid"
+        >
+
+
+            <!-- PERFORMANCE -->
+
+            <article>
+
+                <span
+                    class="feature-icon pink-bg"
+                >
+                    ▥
+                </span>
+
+
+                <div>
+
+                    <h3>
+                        Performance Tracking
+                    </h3>
+
+
+                    <p>
+                        Track academic performance and
+                        identify your strengths.
+                    </p>
+
+                </div>
+
+            </article>
+
+
+            <!-- CAREER -->
+
+            <article>
+
+                <span
+                    class="feature-icon blue-bg"
+                >
+                    ◎
+                </span>
+
+
+                <div>
+
+                    <h3>
+                        Career Guidance
+                    </h3>
+
+
+                    <p>
+                        Get personalized recommendations
+                        based on interests.
+                    </p>
+
+                </div>
+
+            </article>
+
+
+            <!-- RESOURCES -->
+
+            <article>
+
+                <span
+                    class="feature-icon purple-bg"
+                >
+                    ▤
+                </span>
+
+
+                <div>
+
+                    <h3>
+                        Career Resources
+                    </h3>
+
+
+                    <p>
+                        Access study materials,
+                        courses and resources.
+                    </p>
+
+                </div>
+
+            </article>
+
+
+            <!-- REPORTS -->
+
+            <article>
+
+                <span
+                    class="feature-icon blue-bg"
+                >
+                    ▣
+                </span>
+
+
+                <div>
+
+                    <h3>
+                        Reports & Analytics
+                    </h3>
+
+
+                    <p>
+                        Get detailed reports to understand
+                        your progress.
+                    </p>
+
+                </div>
+
+            </article>
+
+
+        </section>
+
+
+        <!-- =================================================
+             IMPACT SECTION
+        ================================================== -->
+
+        <section class="impact-grid">
+
+
+            <div>
+
+                <b>
+                    10,000+
+                </b>
+
+                <span>
+                    Active Students
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <b>
+                    50+
+                </b>
+
+                <span>
+                    Career Options
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <b>
+                    100+
+                </b>
+
+                <span>
+                    Resources
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <b>
+                    95%
+                </b>
+
+                <span>
+                    Success Rate
+                </span>
+
+            </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             HOW THE SYSTEM WORKS FOR STUDENTS
+        ================================================== -->
+
+        <section class="how-it-works-section">
+
+            <div class="how-it-works-container">
+
+                <span class="eyebrow-pill">
+                    Simple 3-Step Process ⚙️
+                </span>
+
+                <h2 class="section-title">
+                    How This Portal Works For You
+                </h2>
+
+                <p class="section-description">
+                    Designed specifically for campus students to analyze performance marks and discover ideal career paths through interactive assessments.
+                </p>
+
+                <div class="steps-grid">
+
+                    <!-- STEP 1 -->
+                    <div class="step-card">
+                        <span class="step-number step-pink">01</span>
+                        <h3>Analyze Performance Marks</h3>
+                        <p>
+                            Input your semester marks, internal assessments, and project grades to visualize your overall academic strengths and growth trends.
+                        </p>
+                    </div>
+
+                    <!-- STEP 2 -->
+                    <div class="step-card">
+                        <span class="step-number step-purple">02</span>
+                        <h3>Attempt Career Quizzes</h3>
+                        <p>
+                            Solve targeted skill questions and domain assessments to test your technical, analytical, and problem-solving abilities.
+                        </p>
+                    </div>
+
+                    <!-- STEP 3 -->
+                    <div class="step-card">
+                        <span class="step-number step-blue">03</span>
+                        <h3>Unlock Career Predictions</h3>
+                        <p>
+                            Get instant match scores for top industry roles like Data Analyst, Software Engineer, or UI/UX Designer based on your quiz results.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             WHY USE THIS PORTAL (KEY ADVANTAGES)
+        ================================================== -->
+
+        <section class="portal-benefits-section">
+
+            <div class="benefits-card">
+
+                <div class="benefits-header">
+                    <h2>Built Specifically for Campus Growth 🎓</h2>
+                    <p>Everything you need to move from semester exams to placement readiness.</p>
+                </div>
+
+                <div class="benefits-grid">
+
+                    <div class="benefit-item">
+                        <h4 class="pink-text">⚡ Real-Time Marks Analytics</h4>
+                        <p>Visualize subject-wise grade distributions and track academic improvements effortlessly.</p>
+                    </div>
+
+                    <div class="benefit-item">
+                        <h4 class="purple-text">🎯 Skill Assessment Testing</h4>
+                        <p>Answer interactive diagnostic questions to pinpoint your practical knowledge in coding, logic, and core subjects.</p>
+                    </div>
+
+                    <div class="benefit-item">
+                        <h4 class="blue-text">🔒 100% Secure & Private</h4>
+                        <p>Your academic scores and test responses are safely encrypted and accessible only to you and official mentors.</p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             FREQUENTLY ASKED QUESTIONS
+        ================================================== -->
+
+        <section class="faq-section">
+
+            <div class="faq-container">
+
+                <h2>Frequently Asked Questions ❓</h2>
+
+                <div class="faq-list">
+
+                    <div class="faq-card">
+                        <h4>Q: How does the Career Assessment quiz work?</h4>
+                        <p>
+                            By answering practical questions in areas like logic, programming, or communication, our platform calculates your real-world aptitude and maps it directly to matching career paths.
+                        </p>
+                    </div>
+
+                    <div class="faq-card">
+                        <h4>Q: Can I track my marks across multiple semesters?</h4>
+                        <p>
+                            Yes! You can log grade performance across all semesters to see your long-term academic progress and strength distribution graphs.
+                        </p>
+                    </div>
+
+                    <div class="faq-card">
+                        <h4>Q: Is this portal free for students?</h4>
+                        <p>
+                            Yes, this is an official internal campus tool provided for all students to track academic growth and prepare for placements.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+
+</body>
+
+</html>

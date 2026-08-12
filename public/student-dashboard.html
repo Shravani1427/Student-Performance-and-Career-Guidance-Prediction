@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" data-page="student-dashboard" data-role="student">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard | Student Performance & Career Guidance</title>
+  
+  <!-- GOOGLE FONTS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- CSS STYLESHEETS -->
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ROOT MOUNT POINT FOR LAYOUT.JS & STUDENT-DASHBOARD.JS -->
+  <div id="app-root"></div>
+
+  <!-- CHART.JS LIBRARY -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  
+  <!-- APPLICATION SCRIPTS (ORDER MATTERS) -->
+  <script src="/js/api.js"></script>
+  <script src="/js/charts.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/student-dashboard.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+const express = require('express');
+const auth = require('../middleware/authMiddleware');
+const admin = require('../middleware/adminMiddleware');
+const studentController = require('../controllers/adminController');
+const complaintController = require('../controllers/complaintController');
+const { adminLogin } = require('../controllers/authController');
+const router = express.Router();
+router.post('/login', adminLogin);
+router.get('/students', auth, admin, studentController.getStudents);
+router.get('/students/:id', auth, admin, studentController.getStudent);
+router.delete('/students/:id', auth, admin, studentController.deleteStudent);
+router.get('/performance', auth, admin, studentController.getPerformance);
+router.get('/complaints', auth, admin, complaintController.allComplaints);
+router.put('/complaints/:id', auth, admin, complaintController.updateComplaint);
+module.exports = router;

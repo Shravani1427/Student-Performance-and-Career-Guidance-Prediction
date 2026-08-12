@@ -1,0 +1,11 @@
+const express = require('express');
+const auth = require('../middleware/authMiddleware');
+const controller = require('../controllers/performanceController');
+const router = express.Router();
+router.get('/analytics/:studentId', auth, controller.analytics);
+router.post('/', auth, controller.createPerformance);
+router.get('/', auth, controller.getPerformance);
+router.get('/:id', auth, controller.getPerformanceById);
+router.put('/:id', auth, controller.updatePerformance);
+router.delete('/:id', auth, controller.deletePerformance);
+module.exports = router;

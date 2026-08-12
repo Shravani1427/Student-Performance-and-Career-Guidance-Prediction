@@ -1,0 +1,769 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Register | Student Performance
+    </title>
+
+
+    <!-- =====================================================
+         GOOGLE FONT
+    ====================================================== -->
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <!-- =====================================================
+         CSS
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="/css/base.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/auth.css"
+    >
+
+
+    <!-- =====================================================
+         REGISTER PAGE CUSTOM CSS
+    ====================================================== -->
+
+    <style>
+
+        /* ================================================
+           SEMESTER SELECT
+        ================================================ */
+
+        .select-row {
+            position: relative;
+        }
+
+
+        .select-row select {
+
+            width: 100%;
+            height: 100%;
+
+            border: none;
+            outline: none;
+
+            background: transparent;
+
+            font-family: "Inter", sans-serif;
+
+            font-size: 14px;
+            font-weight: 500;
+
+            color: #25253a;
+
+            cursor: pointer;
+
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+
+            padding: 0 42px 0 0;
+
+        }
+
+
+        /* Placeholder */
+
+        .select-row select:invalid {
+
+            color: #9999a8;
+
+        }
+
+
+        /* Options */
+
+        .select-row select option {
+
+            background: #ffffff;
+
+            color: #25253a;
+
+            font-family: "Inter", sans-serif;
+
+            font-size: 14px;
+
+        }
+
+
+        /* Dropdown arrow */
+
+        .select-row::after {
+
+            content: "⌄";
+
+            position: absolute;
+
+            right: 18px;
+
+            top: 50%;
+
+            transform: translateY(-55%);
+
+            font-size: 18px;
+
+            font-weight: 700;
+
+            color: #77778a;
+
+            pointer-events: none;
+
+        }
+
+
+        /* Focus */
+
+        .select-row:focus-within {
+
+            border-color: #e83e8c;
+
+            box-shadow:
+                0 0 0 3px rgba(232, 62, 140, 0.10);
+
+        }
+
+
+        /* ================================================
+           REGISTER FORM
+        ================================================ */
+
+        .register-screen .login-card {
+
+            max-width: 470px;
+
+        }
+
+
+        /* ================================================
+           REGISTER NOTE
+        ================================================ */
+
+        .register-note {
+
+            margin-top: 8px;
+
+            font-size: 13px;
+
+            line-height: 1.5;
+
+            color: #77778a;
+
+            text-align: center;
+
+        }
+
+
+        .register-note a {
+
+            color: #e83e8c;
+
+            font-weight: 700;
+
+            text-decoration: none;
+
+        }
+
+
+        .register-note a:hover {
+
+            text-decoration: underline;
+
+        }
+
+
+        /* ================================================
+           SUCCESS MESSAGE
+        ================================================ */
+
+        .success-message {
+
+            width: 100%;
+
+            margin: 10px 0;
+
+            padding: 11px 14px;
+
+            border-radius: 10px;
+
+            background: #ecfdf3;
+
+            border: 1px solid #a7f3d0;
+
+            color: #087443;
+
+            font-size: 13px;
+
+            font-weight: 600;
+
+        }
+
+
+        .success-message.hidden {
+
+            display: none;
+
+        }
+
+
+        /* ================================================
+           ERROR MESSAGE
+        ================================================ */
+
+        .error-message {
+
+            width: 100%;
+
+            margin: 10px 0;
+
+            padding: 11px 14px;
+
+            border-radius: 10px;
+
+            background: #fff1f2;
+
+            border: 1px solid #fecdd3;
+
+            color: #be123c;
+
+            font-size: 13px;
+
+            font-weight: 600;
+
+        }
+
+
+        .error-message.hidden {
+
+            display: none;
+
+        }
+
+
+        /* ================================================
+           REGISTER BUTTON
+        ================================================ */
+
+        .register-submit {
+
+            width: 100%;
+
+            margin-top: 6px;
+
+        }
+
+
+        .register-submit:disabled {
+
+            opacity: 0.65;
+
+            cursor: not-allowed;
+
+        }
+
+
+        /* ================================================
+           MOBILE
+        ================================================ */
+
+        @media (max-width: 600px) {
+
+            .register-screen .login-card {
+
+                width: calc(100% - 30px);
+
+                max-width: none;
+
+            }
+
+
+            .select-row select {
+
+                font-size: 13px;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =====================================================
+         TOAST
+    ====================================================== -->
+
+    <div
+        id="toast"
+        class="toast"
+    ></div>
+
+
+    <!-- =====================================================
+         REGISTER SCREEN
+    ====================================================== -->
+
+    <section class="login-screen register-screen">
+
+
+        <!-- =================================================
+             LEFT SIDE
+        ================================================== -->
+
+        <div class="login-art">
+
+
+            <!-- BACK TO WEBSITE -->
+
+            <a
+                class="back-button"
+                href="/index.html"
+            >
+                ← Back to website
+            </a>
+
+
+            <!-- BRAND -->
+
+            <a
+                class="brand light-brand"
+                href="/index.html"
+            >
+
+                <span class="brand-mark">
+                    ◆
+                </span>
+
+
+                <span>
+
+                    <b>
+                        Student Performance &
+                    </b>
+
+                    <strong>
+                        Career Guidance
+                    </strong>
+
+                </span>
+
+            </a>
+
+
+            <!-- MESSAGE -->
+
+            <div class="login-message">
+
+                <i></i>
+
+                <h1>
+
+                    Start Your
+                    <br>
+                    Journey Today
+
+                </h1>
+
+
+                <p>
+
+                    Create your student account,
+                    track your academic performance
+                    and discover the career path
+                    that matches your skills.
+
+                </p>
+
+            </div>
+
+
+            <!-- FEATURES -->
+
+            <div class="login-points">
+
+
+                <span>
+
+                    ◎ Track
+                    <br>
+                    Performance
+
+                </span>
+
+
+                <span>
+
+                    ✦ Get Career
+                    <br>
+                    Guidance
+
+                </span>
+
+
+                <span>
+
+                    ★ Achieve
+                    <br>
+                    Success
+
+                </span>
+
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             RIGHT SIDE
+        ================================================== -->
+
+        <div class="login-panel">
+
+
+            <!-- =================================================
+                 REGISTER FORM
+            ================================================== -->
+
+            <form
+                id="register-form"
+                class="login-card"
+                novalidate
+            >
+
+
+                <!-- AVATAR -->
+
+                <div class="login-avatar">
+                    ♙
+                </div>
+
+
+                <!-- TITLE -->
+
+                <h2>
+                    Create Account
+                </h2>
+
+
+                <p>
+                    Register as a student to get started
+                </p>
+
+
+                <!-- =================================================
+                     NAME
+                ================================================== -->
+
+                <label class="input-row">
+
+                    <span>
+                        ♙
+                    </span>
+
+
+                    <input
+                        id="register-name"
+                        name="name"
+                        type="text"
+                        placeholder="Full Name"
+                        autocomplete="name"
+                        required
+                    >
+
+                </label>
+
+
+                <!-- =================================================
+                     EMAIL
+                ================================================== -->
+
+                <label class="input-row">
+
+                    <span>
+                        ✉
+                    </span>
+
+
+                    <input
+                        id="register-email"
+                        name="email"
+                        type="email"
+                        placeholder="Email ID"
+                        autocomplete="email"
+                        required
+                    >
+
+                </label>
+
+
+                <!-- =================================================
+                     PASSWORD
+                ================================================== -->
+
+                <label class="input-row">
+
+                    <span>
+                        ⌑
+                    </span>
+
+
+                    <input
+                        id="register-password"
+                        name="password"
+                        type="password"
+                        placeholder="Password"
+                        autocomplete="new-password"
+                        required
+                    >
+
+
+                    <button
+                        type="button"
+                        id="toggle-register-password"
+                        aria-label="Show or hide password"
+                    >
+                        ◌
+                    </button>
+
+                </label>
+
+
+                <!-- =================================================
+                     PHONE
+                ================================================== -->
+
+                <label class="input-row">
+
+                    <span>
+                        ☎
+                    </span>
+
+
+                    <input
+                        id="register-phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="Phone Number"
+                        autocomplete="tel"
+                        maxlength="10"
+                        inputmode="numeric"
+                        required
+                    >
+
+                </label>
+
+
+                <!-- =================================================
+                     COURSE
+                ================================================== -->
+
+                <label class="input-row">
+
+                    <span>
+                        ▣
+                    </span>
+
+
+                    <input
+                        id="register-course"
+                        name="course"
+                        type="text"
+                        placeholder="Course"
+                        required
+                    >
+
+                </label>
+
+
+                <!-- =================================================
+                     SEMESTER
+                ================================================== -->
+
+                <label class="input-row select-row">
+
+                    <span>
+                        ▤
+                    </span>
+
+
+                    <select
+                        id="register-semester"
+                        name="semester"
+                        required
+                    >
+
+                        <option
+                            value=""
+                            selected
+                            disabled
+                        >
+                            Select Semester
+                        </option>
+
+
+                        <option value="1">
+                            Semester 1
+                        </option>
+
+
+                        <option value="2">
+                            Semester 2
+                        </option>
+
+
+                        <option value="3">
+                            Semester 3
+                        </option>
+
+
+                        <option value="4">
+                            Semester 4
+                        </option>
+
+
+                        <option value="5">
+                            Semester 5
+                        </option>
+
+
+                        <option value="6">
+                            Semester 6
+                        </option>
+
+                    </select>
+
+                </label>
+
+
+                <!-- =================================================
+                     ERROR MESSAGE
+                ================================================== -->
+
+                <div
+                    id="register-error"
+                    class="error-message hidden"
+                ></div>
+
+
+                <!-- =================================================
+                     SUCCESS MESSAGE
+                ================================================== -->
+
+                <div
+                    id="register-success"
+                    class="success-message hidden"
+                ></div>
+
+
+                <!-- =================================================
+                     REGISTER BUTTON
+                ================================================== -->
+
+                <button
+                    type="submit"
+                    class="button pink submit-button register-submit"
+                >
+                    Create Account
+                </button>
+
+
+                <!-- =================================================
+                     OR
+                ================================================== -->
+
+                <div class="or">
+
+                    <span>
+                        OR
+                    </span>
+
+                </div>
+
+
+                <!-- =================================================
+                     LOGIN LINK
+                ================================================== -->
+
+                <p class="register-note">
+
+                    Already have an account?
+
+                    <a href="/login.html">
+                        Login here
+                    </a>
+
+                </p>
+
+
+            </form>
+
+
+            <!-- =================================================
+                 FOOTER
+            ================================================== -->
+
+            <footer>
+
+                © 2026 Student Performance &amp;
+                Career Guidance System.
+                All rights reserved.
+
+            </footer>
+
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script src="/js/api.js"></script>
+
+    <script src="/js/register.js"></script>
+
+
+</body>
+
+</html>
