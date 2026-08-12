@@ -74,11 +74,11 @@ console.log("");
 // =====================================================
 
 const pool = mysql.createPool({
-    host: "mysql-2fe3c041-shravanichavan779-8a7a.k.aivencloud.com",
-    port: 11663,
-    user: avnadmin,
-    password: AVNS_yz4G3mymKylwn4-f_6-,
-    database: defaultdb,
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
 
     waitForConnections: true,
     connectionLimit: 10,
