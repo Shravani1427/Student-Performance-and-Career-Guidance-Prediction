@@ -5,30 +5,18 @@
  ADMIN SUBJECTS MANAGEMENT
 =========================================================
 
- API:
+ API Endpoints via AppApi:
  GET    /api/subjects
  GET    /api/subjects/:id
  POST   /api/subjects
  PUT    /api/subjects/:id
  DELETE /api/subjects/:id
 
- Frontend:
- http://localhost:3000
-
- Backend:
- http://localhost:5000
+ Works seamlessly across local Express dev server & Render production.
 =========================================================
 */
 
 (function () {
-
-    /* =====================================================
-       CONFIGURATION
-    ===================================================== */
-
-    const API_BASE_URL = "http://localhost:5000/api";
-    const API_URL = API_BASE_URL + "/subjects";
-
 
     /* =====================================================
        STATE
@@ -39,7 +27,7 @@
 
 
     /* =====================================================
-       DOM
+       DOM REFERENCES
     ===================================================== */
 
     let form;
@@ -155,10 +143,8 @@
     async function init() {
 
         console.log("📚 Subject Admin initializing...");
-        console.log("🔗 Subject API:", API_URL);
 
         cacheDOM();
-
         bindEvents();
         updateLiveMarks();
 
@@ -167,19 +153,19 @@
 
 
     /* =====================================================
-       EVENTS (DELEGATED TO DOCUMENT FOR SPA / LAYOUT.JS COMPATIBILITY)
+       EVENTS (DELEGATED TO DOCUMENT FOR LAYOUT COMPATIBILITY)
     ===================================================== */
 
     function bindEvents() {
 
-        // GLOBAL SUBMIT LISTENER: Catches submit events regardless of layout.js re-renders
+        // GLOBAL SUBMIT LISTENER
         document.addEventListener("submit", function (event) {
             if (event.target && (event.target.id === "subjectForm" || event.target.tagName === "FORM")) {
                 handleSubmit(event);
             }
         });
 
-        // GLOBAL CLICK LISTENER: Handles buttons dynamically
+        // GLOBAL CLICK LISTENER
         document.addEventListener("click", function (event) {
 
             // Reset / Cancel Button
@@ -216,7 +202,7 @@
             }
         });
 
-        // Dynamic Input Change Listeners for Live Marks
+        // Dynamic Input Change Listeners
         document.addEventListener("input", function (event) {
             if (["tObt", "tMax", "aObt", "aMax", "pObt", "pMax", "maxMarks"].includes(event.target.id)) {
                 cacheDOM();
@@ -237,29 +223,52 @@
 
 
     /* =====================================================
-       API REQUEST
+       DYNAMIC API REQUEST WRAPPER
     ===================================================== */
 
-    async function apiRequest(url, options) {
+    async function apiRequest(endpoint, options = {}) {
         options = options || {};
 
-        console.log("🌐 API Request:", options.method || "GET", url);
+        console.log("🌐 API Request:", options.method || "GET", endpoint);
+
+        // 1. Delegate directly to AppApi wrapper if available
+        if (window.AppApi && typeof window.AppApi.request === "function") {
+            return await window.AppApi.request(endpoint, options);
+        }
+
+        // 2. Fallback resolution if AppApi is not present
+        const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
+        const origin = window.location.origin;
+        const port = window.location.port;
+
+        let baseUrl = `${origin}/api`;
+        if (port === "3000" || port === "5500" || port === "8080" || port === "127.0.0.1") {
+            baseUrl = "http://localhost:5000/api";
+        }
+
+        let cleanEndpoint = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
+        if (cleanEndpoint.startsWith("/api")) {
+            cleanEndpoint = cleanEndpoint.substring(4);
+        }
+
+        const fullUrl = baseUrl + cleanEndpoint;
 
         let response;
 
         try {
-            response = await fetch(url, {
+            response = await fetch(fullUrl, {
                 method: options.method || "GET",
                 headers: {
                     "Accept": "application/json",
-                    ...(options.body ? { "Content-Type": "application/json" } : {}),
+                    "Content-Type": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
                     ...(options.headers || {})
                 },
                 body: options.body || undefined
             });
         } catch (error) {
             console.error("❌ Network error:", error);
-            throw new Error("Cannot connect to backend. Make sure Node.js is running on port 5000.");
+            throw new Error("Cannot connect to backend server. Please check your network connection.");
         }
 
         const text = await response.text();
@@ -270,12 +279,12 @@
                 data = JSON.parse(text);
             } catch (error) {
                 console.error("❌ Invalid JSON response:", text);
-                throw new Error("Backend returned an invalid response.");
+                throw new Error("Backend returned an invalid JSON response.");
             }
         }
 
         if (!response.ok) {
-            throw new Error(data && data.message ? data.message : "HTTP " + response.status);
+            throw new Error(data && data.message ? data.message : "HTTP Error " + response.status);
         }
 
         return data;
@@ -290,7 +299,7 @@
         showLoading();
 
         try {
-            const data = await apiRequest(API_URL, { method: "GET" });
+            const data = await apiRequest("/subjects", { method: "GET" });
             console.log("✅ Subjects API response:", data);
 
             if (!data || (data.success !== undefined && !data.success)) {
@@ -320,7 +329,7 @@
 
 
     /* =====================================================
-       ADD / UPDATE
+       ADD / UPDATE SUBMIT
     ===================================================== */
 
     async function handleSubmit(event) {
@@ -328,7 +337,6 @@
             event.preventDefault();
         }
 
-        // Always refresh DOM bindings in case SPA re-inserted elements
         cacheDOM();
 
         const payload = getFormData();
@@ -353,12 +361,12 @@
 
         const id = editId ? editId.value.trim() : "";
         const editing = Boolean(id);
-        const url = editing ? API_URL + "/" + encodeURIComponent(id) : API_URL;
+        const endpoint = editing ? `/subjects/${encodeURIComponent(id)}` : "/subjects";
 
         try {
             setSaving(true);
 
-            const data = await apiRequest(url, {
+            const data = await apiRequest(endpoint, {
                 method: editing ? "PUT" : "POST",
                 body: JSON.stringify(payload)
             });
@@ -415,7 +423,7 @@
 
     async function editSubject(id) {
         try {
-            const data = await apiRequest(API_URL + "/" + encodeURIComponent(id), { method: "GET" });
+            const data = await apiRequest(`/subjects/${encodeURIComponent(id)}`, { method: "GET" });
 
             if (!data || (data.success !== undefined && !data.success)) {
                 throw new Error(data && data.message ? data.message : "Subject not found.");
@@ -484,7 +492,7 @@
         }
 
         try {
-            const data = await apiRequest(API_URL + "/" + encodeURIComponent(id), { method: "DELETE" });
+            const data = await apiRequest(`/subjects/${encodeURIComponent(id)}`, { method: "DELETE" });
 
             if (!data || (data.success !== undefined && !data.success)) {
                 throw new Error(data && data.message ? data.message : "Failed to delete subject.");
@@ -622,7 +630,7 @@
 
 
     /* =====================================================
-       TABLE ROW
+       TABLE ROW CREATION
     ===================================================== */
 
     function createRow(subject, index) {
@@ -668,7 +676,7 @@
 
 
     /* =====================================================
-       LIVE MARKS
+       LIVE MARKS UPDATE
     ===================================================== */
 
     function updateLiveMarks() {
@@ -693,7 +701,7 @@
 
 
     /* =====================================================
-       KPI
+       KPI CARDS
     ===================================================== */
 
     function updateKPIs() {
@@ -723,7 +731,7 @@
 
 
     /* =====================================================
-       RESET
+       RESET FORM
     ===================================================== */
 
     function resetForm() {
@@ -753,7 +761,7 @@
 
 
     /* =====================================================
-       LOADING & ERROR
+       LOADING & ERROR STATES
     ===================================================== */
 
     function showLoading() {
@@ -775,7 +783,7 @@
 
 
     /* =====================================================
-       SAVING
+       SAVING BUTTON STATE
     ===================================================== */
 
     function setSaving(isSaving) {
@@ -808,7 +816,7 @@
 
 
     /* =====================================================
-       TOTALS & PERCENTAGES
+       TOTALS, PERCENTAGES & GRADES
     ===================================================== */
 
     function getTotalObtained(subject) {
@@ -852,7 +860,7 @@
     }
 
     function escapeHTML(value) {
-        return String(value)
+        return String(value ?? "")
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
@@ -862,7 +870,7 @@
 
 
     /* =====================================================
-       TOAST
+       TOAST NOTIFICATION
     ===================================================== */
 
     function showToast(message, type) {
@@ -891,7 +899,7 @@
 
 
     /* =====================================================
-       START
+       START INITIALIZATION
     ===================================================== */
 
     if (document.readyState === "loading") {
