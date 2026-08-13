@@ -4,6 +4,9 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
+// Fallback secret key to prevent crashes if process.env.JWT_SECRET is missing
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_123";
+
 // =====================================================
 // REGISTER STUDENT
 // POST /api/auth/register
@@ -64,8 +67,7 @@ const register = async (req, res) => {
             });
         }
 
-        const emailRegex =
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!emailRegex.test(cleanEmail)) {
             return res.status(400).json({
@@ -77,8 +79,7 @@ const register = async (req, res) => {
         if (password.length < 6) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Password must contain at least 6 characters."
+                message: "Password must contain at least 6 characters."
             });
         }
 
@@ -89,8 +90,7 @@ const register = async (req, res) => {
         ) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Semester must be between 1 and 6."
+                message: "Semester must be between 1 and 6."
             });
         }
 
@@ -99,30 +99,22 @@ const register = async (req, res) => {
         // ---------------------------------------------
 
         connection = await db.getConnection();
-
         await connection.beginTransaction();
 
         // ---------------------------------------------
         // CHECK EXISTING EMAIL
         // ---------------------------------------------
 
-        const [existingUsers] =
-            await connection.execute(
-                `SELECT id
-                 FROM students
-                 WHERE email = ?
-                 LIMIT 1`,
-                [cleanEmail]
-            );
+        const [existingUsers] = await connection.execute(
+            `SELECT id FROM students WHERE email = ? LIMIT 1`,
+            [cleanEmail]
+        );
 
         if (existingUsers.length > 0) {
-
             await connection.rollback();
-
             return res.status(409).json({
                 success: false,
-                message:
-                    "An account with this email already exists."
+                message: "An account with this email already exists."
             });
         }
 
@@ -130,53 +122,26 @@ const register = async (req, res) => {
         // HASH PASSWORD
         // ---------------------------------------------
 
-        const hashedPassword =
-            await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         // ---------------------------------------------
         // INSERT STUDENT
         // ---------------------------------------------
 
-        const [studentResult] =
-            await connection.execute(
-                `INSERT INTO students
-                (
-                    name,
-                    email,
-                    password,
-                    phone,
-                    role
-                )
-                VALUES (?, ?, ?, ?, ?)`,
-                [
-                    cleanName,
-                    cleanEmail,
-                    hashedPassword,
-                    cleanPhone,
-                    "student"
-                ]
-            );
+        const [studentResult] = await connection.execute(
+            `INSERT INTO students (name, email, password, phone, role) VALUES (?, ?, ?, ?, ?)`,
+            [cleanName, cleanEmail, hashedPassword, cleanPhone, "student"]
+        );
 
-        const studentId =
-            studentResult.insertId;
+        const studentId = studentResult.insertId;
 
         // ---------------------------------------------
         // INSERT PROFILE
         // ---------------------------------------------
 
         await connection.execute(
-            `INSERT INTO profiles
-            (
-                student_id,
-                course,
-                semester
-            )
-            VALUES (?, ?, ?)`,
-            [
-                studentId,
-                cleanCourse,
-                cleanSemester
-            ]
+            `INSERT INTO profiles (student_id, course, semester) VALUES (?, ?, ?)`,
+            [studentId, cleanCourse, cleanSemester]
         );
 
         // ---------------------------------------------
@@ -189,29 +154,22 @@ const register = async (req, res) => {
         // JWT
         // ---------------------------------------------
 
-        const token =
-            jwt.sign(
-                {
-                    id: studentId,
-                    email: cleanEmail,
-                    role: "student"
-                },
-                process.env.JWT_SECRET,
-                {
-                    expiresIn: "24h"
-                }
-            );
-
-        console.log(
-            "✅ Registration successful:",
-            cleanEmail
+        const token = jwt.sign(
+            {
+                id: studentId,
+                email: cleanEmail,
+                role: "student"
+            },
+            JWT_SECRET,
+            { expiresIn: "24h" }
         );
+
+        console.log("✅ Registration successful:", cleanEmail);
 
         return res.status(201).json({
             success: true,
             message: "Registration successful.",
             token: token,
-
             user: {
                 id: studentId,
                 name: cleanName,
@@ -233,37 +191,30 @@ const register = async (req, res) => {
             try {
                 await connection.rollback();
             } catch (rollbackError) {
-                console.error(
-                    "Rollback error:",
-                    rollbackError.message
-                );
+                console.error("Rollback error:", rollbackError.message);
             }
         }
 
         if (error.code === "ER_DUP_ENTRY") {
             return res.status(409).json({
                 success: false,
-                message:
-                    "An account with this email already exists."
+                message: "An account with this email already exists."
             });
         }
 
         if (error.code === "ER_NO_SUCH_TABLE") {
             return res.status(500).json({
                 success: false,
-                message:
-                    "Required database table does not exist."
+                message: "Required database table does not exist."
             });
         }
 
         return res.status(500).json({
             success: false,
-            message:
-                "Registration failed. Please try again."
+            message: "Registration failed. Please try again."
         });
 
     } finally {
-
         if (connection) {
             connection.release();
         }
@@ -285,11 +236,7 @@ const login = async (req, res) => {
         console.log("🔐 LOGIN REQUEST");
         console.log("============================================");
 
-        const {
-            email,
-            password,
-            role
-        } = req.body;
+        const { email, password, role } = req.body;
 
         console.log("Email:", email);
         console.log("Requested role:", role);
@@ -299,63 +246,36 @@ const login = async (req, res) => {
         // ---------------------------------------------
 
         if (!email || !password) {
-
             return res.status(400).json({
                 success: false,
-                message:
-                    "Email and password are required."
+                message: "Email and password are required."
             });
         }
 
-        const cleanEmail =
-            String(email)
-                .trim()
-                .toLowerCase();
+        const cleanEmail = String(email).trim().toLowerCase();
 
         // ---------------------------------------------
         // FIND USER
         // ---------------------------------------------
 
-        const [rows] =
-            await db.execute(
-                `SELECT
-                    id,
-                    name,
-                    email,
-                    password,
-                    phone,
-                    role
-                 FROM students
-                 WHERE email = ?
-                 LIMIT 1`,
-                [cleanEmail]
-            );
+        const [rows] = await db.execute(
+            `SELECT id, name, email, password, phone, role FROM students WHERE email = ? LIMIT 1`,
+            [cleanEmail]
+        );
 
         if (rows.length === 0) {
-
-            console.log(
-                "❌ User not found:",
-                cleanEmail
-            );
+            console.log("❌ User not found:", cleanEmail);
 
             return res.status(401).json({
                 success: false,
-                message:
-                    "Invalid email or password."
+                message: "Invalid email or password."
             });
         }
 
         const user = rows[0];
 
-        console.log(
-            "✅ User found:",
-            user.email
-        );
-
-        console.log(
-            "Database role:",
-            user.role
-        );
+        console.log("✅ User found:", user.email);
+        console.log("Database role:", user.role);
 
         // ---------------------------------------------
         // ROLE CHECK
@@ -363,18 +283,13 @@ const login = async (req, res) => {
 
         if (
             role &&
-            String(user.role).toLowerCase() !==
-            String(role).toLowerCase()
+            String(user.role).toLowerCase() !== String(role).toLowerCase()
         ) {
-
-            console.log(
-                "❌ Role mismatch."
-            );
+            console.log("❌ Role mismatch.");
 
             return res.status(403).json({
                 success: false,
-                message:
-                    `This account is registered as ${user.role}.`
+                message: `This account is registered as ${user.role}.`
             });
         }
 
@@ -382,28 +297,18 @@ const login = async (req, res) => {
         // PASSWORD CHECK
         // ---------------------------------------------
 
-        const passwordMatch =
-            await bcrypt.compare(
-                password,
-                user.password
-            );
+        const passwordMatch = await bcrypt.compare(password, user.password);
 
         if (!passwordMatch) {
-
-            console.log(
-                "❌ Incorrect password."
-            );
+            console.log("❌ Incorrect password.");
 
             return res.status(401).json({
                 success: false,
-                message:
-                    "Invalid email or password."
+                message: "Invalid email or password."
             });
         }
 
-        console.log(
-            "✅ Password verified."
-        );
+        console.log("✅ Password verified.");
 
         // ---------------------------------------------
         // PROFILE
@@ -413,62 +318,35 @@ const login = async (req, res) => {
         let semester = "";
 
         try {
-
-            const [profiles] =
-                await db.execute(
-                    `SELECT
-                        course,
-                        semester
-                     FROM profiles
-                     WHERE student_id = ?
-                     LIMIT 1`,
-                    [user.id]
-                );
+            const [profiles] = await db.execute(
+                `SELECT course, semester FROM profiles WHERE student_id = ? LIMIT 1`,
+                [user.id]
+            );
 
             if (profiles.length > 0) {
-
-                course =
-                    profiles[0].course || "";
-
-                semester =
-                    profiles[0].semester || "";
+                course = profiles[0].course || "";
+                semester = profiles[0].semester || "";
             }
-
         } catch (profileError) {
-
-            console.log(
-                "⚠️ Profile not found:",
-                profileError.message
-            );
+            console.log("⚠️ Profile not found:", profileError.message);
         }
 
         // ---------------------------------------------
         // CREATE JWT
         // ---------------------------------------------
 
-        const token =
-            jwt.sign(
-                {
-                    id: user.id,
-                    email: user.email,
-                    role: user.role
-                },
-                process.env.JWT_SECRET,
-                {
-                    expiresIn: "24h"
-                }
-            );
-
-        console.log(
-            "✅ Login successful:",
-            user.email
+        const token = jwt.sign(
+            {
+                id: user.id,
+                email: user.email,
+                role: user.role
+            },
+            JWT_SECRET,
+            { expiresIn: "24h" }
         );
 
-        console.log(
-            "Role:",
-            user.role
-        );
-
+        console.log("✅ Login successful:", user.email);
+        console.log("Role:", user.role);
         console.log("============================================");
 
         // ---------------------------------------------
@@ -476,14 +354,9 @@ const login = async (req, res) => {
         // ---------------------------------------------
 
         return res.status(200).json({
-
             success: true,
-
-            message:
-                "Login successful.",
-
+            message: "Login successful.",
             token: token,
-
             user: {
                 id: user.id,
                 name: user.name,
@@ -504,8 +377,7 @@ const login = async (req, res) => {
 
         return res.status(500).json({
             success: false,
-            message:
-                "Server error during login."
+            message: "Server error during login."
         });
     }
 };
@@ -525,22 +397,17 @@ const adminLogin = async (req, res) => {
         console.log("🔐 ADMIN LOGIN REQUEST");
         console.log("============================================");
 
-        // Force admin role
         req.body.role = "admin";
 
         return await login(req, res);
 
     } catch (error) {
 
-        console.error(
-            "❌ ADMIN LOGIN ERROR:",
-            error
-        );
+        console.error("❌ ADMIN LOGIN ERROR:", error);
 
         return res.status(500).json({
             success: false,
-            message:
-                "Server error during admin login."
+            message: "Server error during admin login."
         });
     }
 };
