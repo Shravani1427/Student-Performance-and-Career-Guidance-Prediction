@@ -76,7 +76,9 @@ window.AppApi = {
         =================================================
         */
 
-        const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
+        const token = localStorage.getItem("auth_token") || 
+                      localStorage.getItem("token") || 
+                      localStorage.getItem("jwt");
 
         if (token) {
             headers.Authorization = `Bearer ${token}`;
@@ -135,9 +137,31 @@ window.AppApi = {
 
         /*
         =================================================
-        HANDLE ERROR
+        HANDLE ERROR & EXPIRATION (401)
         =================================================
         */
+
+        if (response.status === 401) {
+            console.warn("Authentication token is invalid or expired. Redirecting to login...");
+            
+            // Show toast error message if element exists
+            this.toast("Session expired. Please log in again.", true);
+
+            // Clean up invalid tokens
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("auth_user");
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+
+            // Avoid infinite redirect loop if already on index/login page
+            if (window.location.pathname !== "/index.html" && window.location.pathname !== "/") {
+                setTimeout(() => {
+                    window.location.href = "/index.html";
+                }, 1500);
+            }
+
+            throw new Error(data.message || "Invalid or expired authentication token.");
+        }
 
         if (!response.ok) {
             throw new Error(
