@@ -116,7 +116,7 @@
 
 
     // =====================================================
-    // LOAD GLOBAL SYSTEM SUBJECTS (NEW FIX)
+    // LOAD GLOBAL SYSTEM SUBJECTS
     // =====================================================
 
     async function loadAllSubjects() {
@@ -360,7 +360,7 @@
             return completeStudents;
         } catch (error) {
             console.error("Admin students API error:", error);
-            return [];
+            throw error; // Re-throw to trigger auth redirect handler if status is 401
         }
     }
 
@@ -371,8 +371,13 @@
 
     async function createApplicationData() {
         const user = getUser();
-        if (!user) {
-            throw new Error("No logged-in user found. Please login again.");
+        const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
+
+        if (!user || !token) {
+            console.warn("No authentication token or user session found.");
+            localStorage.clear();
+            window.location.href = "/index.html";
+            throw new Error("No logged-in user found. Redirecting to login.");
         }
 
         const role = user.role || "student";
@@ -380,7 +385,7 @@
 
         console.log("👤 Logged in user:", user);
 
-        // Fetch global subjects list simultaneously
+        // Fetch global subjects list
         const globalSubjects = await loadAllSubjects();
 
         if (role === "student") {
@@ -408,7 +413,7 @@
             session: { role: "admin", name: user.name || "Administrator", studentId: null, email: user.email || "" },
             student: null,
             students: students,
-            subjects: globalSubjects, // ATTACHED GLOBAL SUBJECTS HERE
+            subjects: globalSubjects,
             performance: [],
             analytics: {},
             careers: [],
@@ -560,7 +565,7 @@
                     api.logout();
                 } else {
                     localStorage.clear();
-                    window.location.href = "/login.html";
+                    window.location.href = "/index.html";
                 }
             });
         }
@@ -583,6 +588,13 @@
 
             if (!api) {
                 throw new Error("AppApi is not loaded. Make sure api.js is loaded before layout.js.");
+            }
+
+            const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
+            if (!token && window.location.pathname !== "/index.html" && window.location.pathname !== "/") {
+                console.warn("No token available on startup. Redirecting to index.html...");
+                window.location.href = "/index.html";
+                return;
             }
 
             const data = await createApplicationData();
@@ -614,6 +626,12 @@
             console.log("✅ Application initialized successfully.");
         } catch (error) {
             console.error("❌ Application initialization failed:", error);
+            if (error.message && error.message.includes("token")) {
+                localStorage.clear();
+                if (window.location.pathname !== "/index.html" && window.location.pathname !== "/") {
+                    window.location.href = "/index.html";
+                }
+            }
         }
     }
 
