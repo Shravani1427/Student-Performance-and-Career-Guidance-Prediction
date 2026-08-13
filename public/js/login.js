@@ -5,15 +5,6 @@ console.log("LOGIN.JS IS WORKING");
 document.addEventListener("DOMContentLoaded", function () {
 
     // =====================================================
-    // AUTOMATIC RELATIVE API PATHS
-    // Uses current web service origin (Works on Render & Local)
-    // =====================================================
-
-    const STUDENT_LOGIN_URL = "/api/auth/login";
-    const ADMIN_LOGIN_URL = "/api/auth/admin-login";
-
-
-    // =====================================================
     // GET HTML ELEMENTS
     // =====================================================
 
@@ -119,55 +110,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
         try {
 
-            let loginURL = selectedRole === "admin" ? ADMIN_LOGIN_URL : STUDENT_LOGIN_URL;
+            const endpoint = selectedRole === "admin" ? "/auth/admin-login" : "/auth/login";
 
-            console.log("Sending request to:", loginURL);
+            console.log("Sending request via AppApi to:", endpoint);
 
-            const response = await fetch(loginURL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({
-                    email: email,
-                    password: password
-                })
-            });
+            // Use AppApi wrapper if available, fallback to direct fetch
+            let result;
+            if (window.AppApi && typeof window.AppApi.request === "function") {
+                result = await window.AppApi.request(endpoint, {
+                    method: "POST",
+                    body: JSON.stringify({ email, password })
+                });
+            } else {
+                const response = await fetch(`/api${endpoint}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({ email, password })
+                });
 
-            console.log("HTTP STATUS:", response.status);
-
-            let result = {};
-
-            try {
                 result = await response.json();
-            } catch (jsonError) {
-                console.error("Could not read JSON response:", jsonError);
+
+                if (!response.ok || result.success === false) {
+                    throw new Error(result.message || `Login failed with status ${response.status}`);
+                }
             }
 
             console.log("BACKEND RESPONSE:", result);
 
-            if (!response.ok) {
-                throw new Error(
-                    result.message || `Login failed. Server returned ${response.status}.`
-                );
-            }
+            const token = result.token || result.auth_token;
 
-            if (result.success === false) {
-                throw new Error(
-                    result.message || "Invalid email or password."
-                );
-            }
-
-            if (!result.token) {
+            if (!token) {
                 console.error("Server response does not contain token:", result);
                 throw new Error("Login response did not contain an authentication token.");
             }
 
-            localStorage.setItem("auth_token", result.token);
+            // Save under both storage keys for complete compatibility
+            localStorage.setItem("auth_token", token);
+            localStorage.setItem("token", token);
 
             if (result.user) {
                 localStorage.setItem("auth_user", JSON.stringify(result.user));
+                localStorage.setItem("user", JSON.stringify(result.user));
             }
 
             console.log("LOGIN SUCCESSFUL");
