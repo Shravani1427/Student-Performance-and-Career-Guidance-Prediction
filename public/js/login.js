@@ -5,40 +5,24 @@ console.log("LOGIN.JS IS WORKING");
 document.addEventListener("DOMContentLoaded", function () {
 
     // =====================================================
-    // BACKEND API URL
+    // AUTOMATIC RELATIVE API PATHS (No manual URLs required)
     // =====================================================
 
-    const STUDENT_LOGIN_URL =
-        "http://localhost:5000/api/auth/login";
-
-    const ADMIN_LOGIN_URL =
-        "http://localhost:5000/api/auth/admin-login";
+    const STUDENT_LOGIN_URL = "/api/auth/login";
+    const ADMIN_LOGIN_URL = "/api/auth/admin-login";
 
 
     // =====================================================
     // GET HTML ELEMENTS
     // =====================================================
 
-    const loginForm =
-        document.getElementById("login-form");
-
-    const emailInput =
-        document.getElementById("login-email");
-
-    const passwordInput =
-        document.getElementById("login-password");
-
-    const loginError =
-        document.getElementById("login-error");
-
-    const togglePassword =
-        document.getElementById("toggle-password");
-
-    const submitButton =
-        document.querySelector(".submit-button");
-
-    const roleButtons =
-        document.querySelectorAll(".role-tabs button");
+    const loginForm = document.getElementById("login-form");
+    const emailInput = document.getElementById("login-email");
+    const passwordInput = document.getElementById("login-password");
+    const loginError = document.getElementById("login-error");
+    const togglePassword = document.getElementById("toggle-password");
+    const submitButton = document.querySelector(".submit-button");
+    const roleButtons = document.querySelectorAll(".role-tabs button");
 
 
     // =====================================================
@@ -46,11 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     if (!loginForm) {
-
-        console.error(
-            "ERROR: login-form was not found."
-        );
-
+        console.error("ERROR: login-form was not found.");
         return;
     }
 
@@ -60,44 +40,22 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     roleButtons.forEach(function (button) {
-
         button.addEventListener("click", function (event) {
-
             event.preventDefault();
 
-
-            // Remove selected from all buttons
-
             roleButtons.forEach(function (item) {
-
                 item.classList.remove("selected");
-
             });
-
-
-            // Select clicked button
 
             button.classList.add("selected");
 
-
-            // Clear previous error
-
             if (loginError) {
-
                 loginError.textContent = "";
-
                 loginError.classList.add("hidden");
-
             }
 
-
-            console.log(
-                "Selected role:",
-                button.dataset.role
-            );
-
+            console.log("Selected role:", button.dataset.role);
         });
-
     });
 
 
@@ -106,32 +64,15 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     if (togglePassword) {
+        togglePassword.addEventListener("click", function (event) {
+            event.preventDefault();
 
-        togglePassword.addEventListener(
-            "click",
-            function (event) {
-
-                event.preventDefault();
-
-
-                if (
-                    passwordInput.type ===
-                    "password"
-                ) {
-
-                    passwordInput.type =
-                        "text";
-
-                } else {
-
-                    passwordInput.type =
-                        "password";
-
-                }
-
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+            } else {
+                passwordInput.type = "password";
             }
-        );
-
+        });
     }
 
 
@@ -139,374 +80,124 @@ document.addEventListener("DOMContentLoaded", function () {
     // LOGIN FORM SUBMIT
     // =====================================================
 
-    loginForm.addEventListener(
-        "submit",
-        async function (event) {
+    loginForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
 
-            event.preventDefault();
+        console.log("LOGIN BUTTON CLICKED");
 
+        const selectedButton = document.querySelector(".role-tabs button.selected");
+        const selectedRole = selectedButton ? selectedButton.dataset.role : "student";
 
-            console.log(
-                "LOGIN BUTTON CLICKED"
-            );
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
 
+        console.log("Selected role:", selectedRole);
+        console.log("Email:", email);
 
-            // =================================================
-            // GET SELECTED ROLE
-            // =================================================
+        if (!email) {
+            showError("Please enter your email address.");
+            emailInput.focus();
+            return;
+        }
 
-            const selectedButton =
-                document.querySelector(
-                    ".role-tabs button.selected"
-                );
+        if (!password) {
+            showError("Please enter your password.");
+            passwordInput.focus();
+            return;
+        }
 
+        if (loginError) {
+            loginError.textContent = "";
+            loginError.classList.add("hidden");
+        }
 
-            const selectedRole =
-                selectedButton
-                    ? selectedButton.dataset.role
-                    : "student";
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Signing in...";
+        }
 
+        try {
 
-            // =================================================
-            // GET EMAIL AND PASSWORD
-            // =================================================
+            let loginURL = selectedRole === "admin" ? ADMIN_LOGIN_URL : STUDENT_LOGIN_URL;
 
-            const email =
-                emailInput.value.trim();
+            console.log("Sending request to:", loginURL);
 
-            const password =
-                passwordInput.value;
+            const response = await fetch(loginURL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
 
+            console.log("HTTP STATUS:", response.status);
 
-            console.log(
-                "Selected role:",
-                selectedRole
-            );
-
-            console.log(
-                "Email:",
-                email
-            );
-
-
-            // =================================================
-            // VALIDATE EMAIL
-            // =================================================
-
-            if (!email) {
-
-                showError(
-                    "Please enter your email address."
-                );
-
-                emailInput.focus();
-
-                return;
-            }
-
-
-            // =================================================
-            // VALIDATE PASSWORD
-            // =================================================
-
-            if (!password) {
-
-                showError(
-                    "Please enter your password."
-                );
-
-                passwordInput.focus();
-
-                return;
-            }
-
-
-            // =================================================
-            // CLEAR OLD ERROR
-            // =================================================
-
-            if (loginError) {
-
-                loginError.textContent = "";
-
-                loginError.classList.add(
-                    "hidden"
-                );
-
-            }
-
-
-            // =================================================
-            // DISABLE LOGIN BUTTON
-            // =================================================
-
-            if (submitButton) {
-
-                submitButton.disabled = true;
-
-                submitButton.textContent =
-                    "Signing in...";
-
-            }
-
+            let result = {};
 
             try {
+                result = await response.json();
+            } catch (jsonError) {
+                console.error("Could not read JSON response:", jsonError);
+            }
 
-                // =================================================
-                // SELECT CORRECT LOGIN API
-                // =================================================
+            console.log("BACKEND RESPONSE:", result);
 
-                let loginURL;
-
-
-                if (
-                    selectedRole ===
-                    "admin"
-                ) {
-
-                    loginURL =
-                        ADMIN_LOGIN_URL;
-
-                } else {
-
-                    loginURL =
-                        STUDENT_LOGIN_URL;
-
-                }
-
-
-                console.log(
-                    "Sending request to:",
-                    loginURL
+            if (!response.ok) {
+                throw new Error(
+                    result.message || `Login failed. Server returned ${response.status}.`
                 );
+            }
 
-
-                // =================================================
-                // SEND LOGIN REQUEST
-                // =================================================
-
-                const response =
-                    await fetch(
-                        loginURL,
-                        {
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json",
-
-                                "Accept":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    email:
-                                        email,
-
-                                    password:
-                                        password
-                                })
-                        }
-                    );
-
-
-                // =================================================
-                // HTTP STATUS
-                // =================================================
-
-                console.log(
-                    "HTTP STATUS:",
-                    response.status
+            if (result.success === false) {
+                throw new Error(
+                    result.message || "Invalid email or password."
                 );
+            }
 
+            if (!result.token) {
+                console.error("Server response does not contain token:", result);
+                throw new Error("Login response did not contain an authentication token.");
+            }
 
-                // =================================================
-                // READ SERVER RESPONSE
-                // =================================================
+            localStorage.setItem("auth_token", result.token);
 
-                let result = {};
+            if (result.user) {
+                localStorage.setItem("auth_user", JSON.stringify(result.user));
+            }
 
-                try {
+            console.log("LOGIN SUCCESSFUL");
+            console.log("Logged-in user:", result.user);
 
-                    result =
-                        await response.json();
+            if (selectedRole === "admin") {
+                window.location.href = "/admin-dashboard.html";
+            } else {
+                window.location.href = "/student-dashboard.html";
+            }
 
-                } catch (jsonError) {
+        } catch (error) {
 
-                    console.error(
-                        "Could not read JSON response:",
-                        jsonError
-                    );
+            console.error("LOGIN ERROR:", error);
 
-                }
+            if (error instanceof TypeError) {
+                showError("Cannot connect to the backend server. Please verify your connection.");
+            } else {
+                showError(error.message || "Login failed. Please try again.");
+            }
 
+        } finally {
 
-                console.log(
-                    "BACKEND RESPONSE:",
-                    result
-                );
-
-
-                // =================================================
-                // HANDLE HTTP ERRORS
-                // =================================================
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        result.message ||
-                        `Login failed. Server returned ${response.status}.`
-                    );
-
-                }
-
-
-                // =================================================
-                // HANDLE success:false
-                // =================================================
-
-                if (
-                    result.success ===
-                    false
-                ) {
-
-                    throw new Error(
-                        result.message ||
-                        "Invalid email or password."
-                    );
-
-                }
-
-
-                // =================================================
-                // CHECK AUTHENTICATION TOKEN
-                // =================================================
-
-                if (!result.token) {
-
-                    console.error(
-                        "Server response does not contain token:",
-                        result
-                    );
-
-
-                    throw new Error(
-                        "Login response did not contain an authentication token."
-                    );
-
-                }
-
-
-                // =================================================
-                // SAVE JWT TOKEN
-                // =================================================
-
-                localStorage.setItem(
-                    "auth_token",
-                    result.token
-                );
-
-
-                // =================================================
-                // SAVE USER INFORMATION
-                // =================================================
-
-                if (result.user) {
-
-                    localStorage.setItem(
-                        "auth_user",
-                        JSON.stringify(
-                            result.user
-                        )
-                    );
-
-                }
-
-
-                console.log(
-                    "LOGIN SUCCESSFUL"
-                );
-
-
-                console.log(
-                    "Logged-in user:",
-                    result.user
-                );
-
-
-                // =================================================
-                // REDIRECT USER
-                // =================================================
-
-                if (
-                    selectedRole ===
-                    "admin"
-                ) {
-
-                    window.location.href =
-                        "/admin-dashboard.html";
-
-                } else {
-
-                    window.location.href =
-                        "/student-dashboard.html";
-
-                }
-
-            } catch (error) {
-
-                // =================================================
-                // LOGIN ERROR
-                // =================================================
-
-                console.error(
-                    "LOGIN ERROR:",
-                    error
-                );
-
-
-                // =================================================
-                // FETCH / CONNECTION ERROR
-                // =================================================
-
-                if (
-                    error instanceof TypeError
-                ) {
-
-                    showError(
-                        "Cannot connect to the Express backend. Please make sure the backend is running on port 5000."
-                    );
-
-                } else {
-
-                    showError(
-                        error.message ||
-                        "Login failed. Please try again."
-                    );
-
-                }
-
-            } finally {
-
-                // =================================================
-                // ENABLE BUTTON AGAIN
-                // =================================================
-
-                if (submitButton) {
-
-                    submitButton.disabled =
-                        false;
-
-                    submitButton.textContent =
-                        "Login";
-
-                }
-
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = "Login";
             }
 
         }
-    );
+
+    });
 
 
     // =====================================================
@@ -514,28 +205,14 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     function showError(message) {
-
-        console.error(
-            "LOGIN MESSAGE:",
-            message
-        );
-
+        console.error("LOGIN MESSAGE:", message);
 
         if (loginError) {
-
-            loginError.textContent =
-                message;
-
-            loginError.classList.remove(
-                "hidden"
-            );
-
+            loginError.textContent = message;
+            loginError.classList.remove("hidden");
         } else {
-
             alert(message);
-
         }
-
     }
 
 });
