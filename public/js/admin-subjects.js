@@ -153,7 +153,7 @@
 
 
     /* =====================================================
-       EVENTS (DELEGATED TO DOCUMENT FOR LAYOUT COMPATIBILITY)
+       EVENTS
     ===================================================== */
 
     function bindEvents() {
