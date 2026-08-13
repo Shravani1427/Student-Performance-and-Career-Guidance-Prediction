@@ -5,7 +5,8 @@ console.log("LOGIN.JS IS WORKING");
 document.addEventListener("DOMContentLoaded", function () {
 
     // =====================================================
-    // AUTOMATIC RELATIVE API PATHS (No manual URLs required)
+    // AUTOMATIC RELATIVE API PATHS
+    // Uses current web service origin (Works on Render & Local)
     // =====================================================
 
     const STUDENT_LOGIN_URL = "/api/auth/login";
@@ -183,7 +184,7 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("LOGIN ERROR:", error);
 
             if (error instanceof TypeError) {
-                showError("Cannot connect to the backend server. Please verify your connection.");
+                showError("Cannot connect to the backend server. Please check your network connection.");
             } else {
                 showError(error.message || "Login failed. Please try again.");
             }

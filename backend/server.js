@@ -264,7 +264,7 @@ app.get("/admin-subjects.html", (req, res) => {
     res.sendFile(filePath);
 });
 
-// Serve main page (login.html) at root URL
+// Serve main landing page (login.html or index.html) at root URL
 app.get("/", (req, res) => {
     const loginFilePath = path.join(frontendPath, "login.html");
     const indexFilePath = path.join(frontendPath, "index.html");
