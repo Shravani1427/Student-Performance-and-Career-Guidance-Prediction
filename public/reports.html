@@ -1,2 +1,572 @@
 <!DOCTYPE html>
-<html lang="en" data-page="reports" data-role="admin"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Reports & Analytics</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/dashboard.css"><link rel="stylesheet" href="/css/modules.css"></head><body><div id="toast" class="toast"></div><div id="app-root"></div><script src="/js/api.js"></script><script src="/js/layout.js"></script><script src="/js/reports.js"></script></body></html>
+<html lang="en"
+      data-page="reports"
+      data-role="admin">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Reports | Student Performance</title>
+
+    <!-- =====================================================
+         CSS
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="/css/layout.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/reports.css"
+    >
+
+</head>
+
+<body>
+
+    <!-- =====================================================
+         MAIN APP ROOT
+    ====================================================== -->
+
+    <div id="app-root"></div>
+
+
+    <!-- =====================================================
+         REPORTS PAGE CONTENT SOURCE
+         
+         IMPORTANT:
+         layout.js copies this content into #page-content
+    ====================================================== -->
+
+    <div
+        id="page-content-source"
+        style="display: none;"
+    >
+
+        <section class="reports-page">
+
+            <!-- =================================================
+                 PAGE HEADER
+            ================================================== -->
+
+            <div class="reports-header">
+
+                <div>
+
+                    <span class="reports-eyebrow">
+                        ADMINISTRATION
+                    </span>
+
+                    <h1>
+                        Reports & Analytics
+                    </h1>
+
+                    <p>
+                        Generate and download student,
+                        attendance and academic performance reports.
+                    </p>
+
+                </div>
+
+                <div class="reports-header-icon">
+                    ▤
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 QUICK SUMMARY
+            ================================================== -->
+
+            <div class="report-summary-grid">
+
+                <div class="summary-card">
+
+                    <div class="summary-icon">
+                        ♙
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Total Students
+                        </span>
+
+                        <strong id="total-students">
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="summary-card">
+
+                    <div class="summary-icon">
+                        ▦
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Total Subjects
+                        </span>
+
+                        <strong id="total-subjects">
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="summary-card">
+
+                    <div class="summary-icon">
+                        ▥
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Performance Records
+                        </span>
+
+                        <strong id="total-performance">
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="summary-card">
+
+                    <div class="summary-icon">
+                        ◔
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Report Status
+                        </span>
+
+                        <strong id="report-status">
+                            Ready
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 STUDENT REPORT
+            ================================================== -->
+
+            <section class="report-section">
+
+                <div class="section-heading">
+
+                    <div class="section-icon student-icon">
+                        ♙
+                    </div>
+
+                    <div>
+
+                        <h2>
+                            Student Reports
+                        </h2>
+
+                        <p>
+                            Download the complete list of registered students.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="report-card">
+
+                    <div class="report-card-content">
+
+                        <div>
+
+                            <h3>
+                                All Student Profiles
+                            </h3>
+
+                            <p>
+                                Includes newly registered students,
+                                student ID, name, email and department.
+                            </p>
+
+                        </div>
+
+                        <div class="report-actions">
+
+                            <button
+                                type="button"
+                                class="report-btn pdf-btn"
+                                id="student-pdf-btn"
+                            >
+                                <span>▤</span>
+                                Download PDF
+                            </button>
+
+                            <button
+                                type="button"
+                                class="report-btn excel-btn"
+                                id="student-excel-btn"
+                            >
+                                <span>▥</span>
+                                Download Excel
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 ATTENDANCE REPORT
+            ================================================== -->
+
+            <section class="report-section">
+
+                <div class="section-heading">
+
+                    <div class="section-icon attendance-icon">
+                        ◔
+                    </div>
+
+                    <div>
+
+                        <h2>
+                            Attendance Reports
+                        </h2>
+
+                        <p>
+                            Generate attendance reports for selected periods.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="report-card">
+
+                    <div class="attendance-controls">
+
+                        <div class="form-group">
+
+                            <label for="attendance-range">
+                                Report Period
+                            </label>
+
+                            <select
+                                id="attendance-range"
+                            >
+
+                                <option value="1m">
+                                    Last 1 Month
+                                </option>
+
+                                <option value="3m">
+                                    Last 3 Months
+                                </option>
+
+                                <option value="6m">
+                                    Last 6 Months
+                                </option>
+
+                                <option value="1y">
+                                    Last 1 Year
+                                </option>
+
+                                <option value="custom">
+                                    Custom Date
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div
+                            class="custom-date-fields"
+                            id="custom-date-fields"
+                        >
+
+                            <div class="form-group">
+
+                                <label for="attendance-start">
+                                    Start Date
+                                </label>
+
+                                <input
+                                    type="date"
+                                    id="attendance-start"
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="attendance-end">
+                                    End Date
+                                </label>
+
+                                <input
+                                    type="date"
+                                    id="attendance-end"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="report-actions attendance-actions">
+
+                            <button
+                                type="button"
+                                class="report-btn pdf-btn"
+                                id="attendance-pdf-btn"
+                            >
+                                <span>▤</span>
+                                Download PDF
+                            </button>
+
+                            <button
+                                type="button"
+                                class="report-btn excel-btn"
+                                id="attendance-excel-btn"
+                            >
+                                <span>▥</span>
+                                Download Excel
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 PERFORMANCE REPORT
+            ================================================== -->
+
+            <section class="report-section">
+
+                <div class="section-heading">
+
+                    <div class="section-icon performance-icon">
+                        ▥
+                    </div>
+
+                    <div>
+
+                        <h2>
+                            Academic Performance Reports
+                        </h2>
+
+                        <p>
+                            Download student marks and academic performance data.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="report-card">
+
+                    <div class="report-card-content">
+
+                        <div>
+
+                            <h3>
+                                Student Performance
+                            </h3>
+
+                            <p>
+                                Includes student name, subject,
+                                marks and grade.
+                            </p>
+
+                        </div>
+
+                        <div class="report-actions">
+
+                            <button
+                                type="button"
+                                class="report-btn pdf-btn"
+                                id="performance-pdf-btn"
+                            >
+                                <span>▤</span>
+                                Download PDF
+                            </button>
+
+                            <button
+                                type="button"
+                                class="report-btn excel-btn"
+                                id="performance-excel-btn"
+                            >
+                                <span>▥</span>
+                                Download Excel
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 COMPLETE COLLEGE REPORT
+            ================================================== -->
+
+            <section class="report-section">
+
+                <div class="section-heading">
+
+                    <div class="section-icon complete-icon">
+                        ◈
+                    </div>
+
+                    <div>
+
+                        <h2>
+                            Complete College Report
+                        </h2>
+
+                        <p>
+                            Download a complete student directory.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="report-card complete-report-card">
+
+                    <div class="report-card-content">
+
+                        <div>
+
+                            <h3>
+                                Complete College Directory
+                            </h3>
+
+                            <p>
+                                Contains all currently registered students,
+                                including newly added students.
+                            </p>
+
+                        </div>
+
+                        <div class="report-actions">
+
+                            <button
+                                type="button"
+                                class="report-btn pdf-btn"
+                                id="complete-pdf-btn"
+                            >
+                                <span>▤</span>
+                                Download PDF
+                            </button>
+
+                            <button
+                                type="button"
+                                class="report-btn excel-btn"
+                                id="complete-excel-btn"
+                            >
+                                <span>▥</span>
+                                Download Excel
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 INFORMATION
+            ================================================== -->
+
+            <div class="report-info">
+
+                <span class="info-icon">
+                    ℹ
+                </span>
+
+                <div>
+
+                    <strong>
+                        Reports use live database data
+                    </strong>
+
+                    <p>
+                        Newly registered students will be included
+                        automatically when you generate a new report.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+         
+         IMPORTANT:
+         api.js BEFORE layout.js BEFORE reports.js
+    ====================================================== -->
+
+    <script src="/js/api.js"></script>
+
+    <script src="/js/layout.js"></script>
+
+    <script src="/js/reports.js"></script>
+
+</body>
+
+</html>
