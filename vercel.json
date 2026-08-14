@@ -5,12 +5,13 @@
       "framework": "nextjs"
     },
     "backend": {
-      "root": "backend"
+      "root": ".",
+      "entrypoint": "server.js"
     }
   },
   "rewrites": [
     {
-      "source": "/api/backend(/.*)?",
+      "source": "/api/(.*)",
       "destination": {
         "type": "service",
         "service": "backend"
