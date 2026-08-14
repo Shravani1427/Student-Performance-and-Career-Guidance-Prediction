@@ -1,44 +1,43 @@
+"use strict";
+
 // =====================================================
-// MySQL Database Connection
+// MYSQL DATABASE CONNECTION
 // Student Performance & Career Guidance System
-// Compatible with: Local, Render & Vercel Serverless
+// Node.js + Express.js + MySQL
+// Compatible with Vercel Serverless
 // =====================================================
 
 const mysql = require("mysql2/promise");
-const dotenv = require("dotenv");
-const path = require("path");
 
 // =====================================================
-// LOAD ENVIRONMENT VARIABLES
+// DATABASE CONFIGURATION
 // =====================================================
 
-dotenv.config({ path: path.join(__dirname, "..", "..", ".env.local") });
-dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
-dotenv.config({ path: path.join(__dirname, "..", ".env.local") });
-dotenv.config({ path: path.join(__dirname, "..", ".env") });
+const DB_HOST = process.env.DB_HOST;
+const DB_PORT = Number(process.env.DB_PORT || 3306);
+const DB_USER = process.env.DB_USER;
+const DB_PASSWORD = process.env.DB_PASSWORD;
+const DB_NAME = process.env.DB_NAME;
 
 // =====================================================
-// EXTRACT MYSQL CREDENTIALS
+// CHECK ENVIRONMENT VARIABLES
 // =====================================================
 
-let DB_HOST = process.env.DB_HOST;
-let DB_PORT = Number(process.env.DB_PORT) || 3306;
-let DB_USER = process.env.DB_USER;
-let DB_PASSWORD = process.env.DB_PASSWORD;
-let DB_NAME = process.env.DB_NAME;
+console.log("==========================================");
+console.log("MYSQL DATABASE CONFIGURATION");
+console.log("==========================================");
+console.log("DB_HOST:", DB_HOST ? "SET" : "MISSING");
+console.log("DB_PORT:", DB_PORT);
+console.log("DB_USER:", DB_USER ? "SET" : "MISSING");
+console.log("DB_PASSWORD:", DB_PASSWORD ? "SET" : "MISSING");
+console.log("DB_NAME:", DB_NAME ? "SET" : "MISSING");
+console.log("VERCEL:", process.env.VERCEL || "false");
+console.log("==========================================");
 
-// Fallback: Parse from DATABASE_URL if individual vars aren't set
-if (process.env.DATABASE_URL) {
-  try {
-    const databaseUrl = new URL(process.env.DATABASE_URL);
-    DB_HOST = databaseUrl.hostname || DB_HOST;
-    DB_PORT = Number(databaseUrl.port) || DB_PORT;
-    DB_USER = decodeURIComponent(databaseUrl.username) || DB_USER;
-    DB_PASSWORD = decodeURIComponent(databaseUrl.password) || DB_PASSWORD;
-    DB_NAME = decodeURIComponent(databaseUrl.pathname.replace("/", "")) || DB_NAME;
-  } catch (error) {
-    console.warn("⚠️ Could not parse DATABASE_URL, using individual environment variables.");
-  }
+if (!DB_HOST || !DB_USER || !DB_NAME) {
+    console.error(
+        "❌ MySQL environment variables are missing."
+    );
 }
 
 // =====================================================
@@ -46,47 +45,37 @@ if (process.env.DATABASE_URL) {
 // =====================================================
 
 const pool = mysql.createPool({
-  host: DB_HOST,
-  port: DB_PORT,
-  user: DB_USER,
-  password: DB_PASSWORD,
-  database: DB_NAME,
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
 
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
+    waitForConnections: true,
 
-  charset: "utf8mb4",
+    connectionLimit: 5,
 
-  // SSL for remote hosts (e.g., Aiven, PlanetScale, Railway)
-  ssl: {
-    rejectUnauthorized: false
-  }
+    queueLimit: 0,
+
+    enableKeepAlive: true,
+
+    keepAliveInitialDelay: 0,
+
+    charset: "utf8mb4",
+
+    // =================================================
+    // SSL
+    // =================================================
+    // Required by many cloud MySQL providers.
+    // =================================================
+
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
 // =====================================================
-// RUN CONNECTION TEST (Local only, non-blocking on Vercel)
-// =====================================================
-
-if (process.env.VERCEL !== "1" && process.env.NODE_ENV !== "production") {
-  (async () => {
-    let connection;
-    try {
-      connection = await pool.getConnection();
-      console.log("✅ MySQL Database connected successfully!");
-      console.log(`🗄️ Database: ${DB_NAME} on ${DB_HOST}:${DB_PORT}`);
-    } catch (error) {
-      console.error("❌ MySQL local connection failed:", error.message);
-    } finally {
-      if (connection) connection.release();
-    }
-  })();
-}
-
-// =====================================================
-// EXPORT POOL
+// EXPORT DATABASE POOL
 // =====================================================
 
 module.exports = pool;
