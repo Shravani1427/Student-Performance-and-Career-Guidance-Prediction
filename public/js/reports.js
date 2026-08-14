@@ -1,276 +1,215 @@
 "use strict";
 
-const express = require("express");
-const router = express.Router();
-const db = require("../config/db");
+/*
+=====================================================
+REPORTS & ANALYTICS CLIENT MODULE
+=====================================================
+*/
 
-// Calculate Start Date Based on Range String
-function getStartDateForRange(range, customStart) {
-  if (range === "custom" && customStart) return customStart;
+const apiReports = window.AppApi;
 
-  const d = new Date();
-  if (range === "1m") d.setMonth(d.getMonth() - 1);
-  else if (range === "3m") d.setMonth(d.getMonth() - 3);
-  else if (range === "6m") d.setMonth(d.getMonth() - 6);
-  else if (range === "1y") d.setFullYear(d.getFullYear() - 1);
-  else d.setMonth(d.getMonth() - 1); // Default 1m
-
-  return d.toISOString().slice(0, 10);
+function escReport(value) {
+    if (apiReports && typeof apiReports.escape === "function") {
+        return apiReports.escape(value);
+    }
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
-// Convert Array to CSV / Excel compatible format
-function convertToCSV(data) {
-  if (!Array.isArray(data) || data.length === 0) return "No records found\n";
-  const headers = Object.keys(data[0]);
-  const csvRows = [headers.join(",")];
+function calculateClassMetrics(students) {
+    if (!Array.isArray(students) || students.length === 0) {
+        return {
+            totalStudents: 0,
+            avgScore: 0,
+            avgAttendance: 0,
+            passCount: 0,
+            failCount: 0
+        };
+    }
 
-  for (const row of data) {
-    const values = headers.map((header) => {
-      const escaped = String(row[header] ?? "").replace(/"/g, '""');
-      return `"${escaped}"`;
+    let totalScoreSum = 0;
+    let totalAttendanceSum = 0;
+    let passCount = 0;
+    let failCount = 0;
+
+    students.forEach((s) => {
+        const perf = s.performance || {};
+        const att = s.attendance || {};
+
+        const pct = Number(perf.percentage || 0);
+        totalScoreSum += pct;
+
+        const attPct = Number(att.percentage || 0);
+        totalAttendanceSum += attPct;
+
+        if (pct >= 40) passCount++;
+        else failCount++;
     });
-    csvRows.push(values.join(","));
-  }
-  return csvRows.join("\n");
+
+    return {
+        totalStudents: students.length,
+        avgScore: Math.round((totalScoreSum / students.length) * 10) / 10,
+        avgAttendance: Math.round((totalAttendanceSum / students.length) * 10) / 10,
+        passCount,
+        failCount
+    };
 }
 
-function sendCSVResponse(res, filename, rows) {
-  const csvData = convertToCSV(rows);
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", `attachment; filename="${filename}.csv"`);
-  return res.status(200).send(csvData);
+function renderReportsPage() {
+    if (window.App) window.App.renderPage = renderReportsPage;
+
+    const pageContent = document.getElementById("page-content");
+    if (!pageContent) return;
+
+    const students = (window.App && window.App.data && Array.isArray(window.App.data.students)) 
+        ? window.App.data.students 
+        : [];
+
+    const metrics = calculateClassMetrics(students);
+
+    pageContent.innerHTML = `
+        <div class="page-title" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <span class="eyebrow">Export Center</span>
+                <h1>Reports & Institutional Analytics</h1>
+                <p>Generate, view, and export university analytics and performance metrics.</p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="/api/reports/excel" class="button pink" download style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                    ⬇ Complete Excel
+                </a>
+                <a href="/api/reports/pdf" target="_blank" class="button" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:#4f46e5; color:#fff;">
+                    ⎙ Complete PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- STATS OVERVIEW CARDS -->
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            <div class="panel" style="padding: 20px;">
+                <span style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase;">Total Enrollment</span>
+                <h2 style="font-size: 28px; margin: 8px 0 0; color: #0f172a;">${metrics.totalStudents}</h2>
+            </div>
+            <div class="panel" style="padding: 20px;">
+                <span style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase;">Class Avg Score</span>
+                <h2 style="font-size: 28px; margin: 8px 0 0; color: #ec4899;">${metrics.avgScore}%</h2>
+            </div>
+            <div class="panel" style="padding: 20px;">
+                <span style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase;">Avg Attendance</span>
+                <h2 style="font-size: 28px; margin: 8px 0 0; color: #3b82f6;">${metrics.avgAttendance}%</h2>
+            </div>
+            <div class="panel" style="padding: 20px;">
+                <span style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase;">Passing Rate</span>
+                <h2 style="font-size: 28px; margin: 8px 0 0; color: #10b981;">
+                    ${metrics.totalStudents > 0 ? Math.round((metrics.passCount / metrics.totalStudents) * 100) : 0}%
+                </h2>
+            </div>
+        </div>
+
+        <!-- EXPORT ACTIONS PANEL -->
+        <section class="panel" style="margin-bottom: 24px; padding: 24px;">
+            <div class="panel-head" style="margin-bottom: 16px;">
+                <div>
+                    <h2>Specific Data Exports</h2>
+                    <p>Download targeted datasets based on system modules.</p>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                
+                <!-- Students Export Box -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; background: #fafafa;">
+                    <h3 style="margin: 0 0 6px; font-size: 16px;">Student Directory</h3>
+                    <p style="margin: 0 0 14px; font-size: 13px; color: #64748b;">Profiles, email, and department data.</p>
+                    <div style="display: flex; gap: 8px;">
+                        <a href="/api/reports/students/excel" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">CSV / Excel</a>
+                        <a href="/api/reports/students/pdf" target="_blank" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">PDF</a>
+                    </div>
+                </div>
+
+                <!-- Attendance Export Box -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; background: #fafafa;">
+                    <h3 style="margin: 0 0 6px; font-size: 16px;">Attendance Summary</h3>
+                    <p style="margin: 0 0 14px; font-size: 13px; color: #64748b;">Present, absent, and leave counts.</p>
+                    <div style="display: flex; gap: 8px;">
+                        <a href="/api/reports/attendance/excel" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">CSV / Excel</a>
+                        <a href="/api/reports/attendance/pdf" target="_blank" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">PDF</a>
+                    </div>
+                </div>
+
+                <!-- Performance Export Box -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; background: #fafafa;">
+                    <h3 style="margin: 0 0 6px; font-size: 16px;">Academic Performance</h3>
+                    <p style="margin: 0 0 14px; font-size: 13px; color: #64748b;">Exam marks, grades, and records.</p>
+                    <div style="display: flex; gap: 8px;">
+                        <a href="/api/reports/performance/excel" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">CSV / Excel</a>
+                        <a href="/api/reports/performance/pdf" target="_blank" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">PDF</a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- STUDENT PERFORMANCE OVERVIEW TABLE -->
+        <section class="panel recent">
+            <div class="panel-head">
+                <div>
+                    <h2>Student Performance Directory</h2>
+                    <p>Live summary of all enrolled student metrics.</p>
+                </div>
+                <span class="pill good">${students.length} Total</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Average Score</th>
+                            <th>Attendance</th>
+                            <th>Grade</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${
+                            students.length === 0
+                                ? `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No student records found in database.</td></tr>`
+                                : students.map((s) => {
+                                    const pct = Number(s.performance?.percentage || 0);
+                                    const att = Number(s.attendance?.percentage || 0);
+                                    const grade = s.performance?.grade || "N/A";
+                                    const passed = pct >= 40;
+
+                                    return `
+                                        <tr>
+                                            <td><strong>${escReport(s.studentCode || ("STU-" + s.id))}</strong></td>
+                                            <td>${escReport(s.name)}</td>
+                                            <td>${escReport(s.department || s.course || "General")}</td>
+                                            <td><strong>${pct}%</strong></td>
+                                            <td>${att}%</td>
+                                            <td><span class="rc-grade">${escReport(grade)}</span></td>
+                                            <td><span class="pill ${passed ? "good" : "focus"}">${passed ? "Pass" : "At Risk"}</span></td>
+                                        </tr>
+                                    `;
+                                }).join("")
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    `;
 }
 
-function sendPDFResponse(res, title, rows) {
-  if (!Array.isArray(rows) || rows.length === 0) {
-    rows = [{ Status: "No records found for the selected period." }];
-  }
-  const headers = Object.keys(rows[0]);
-
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>${title}</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 30px; color: #1e293b; }
-        h1 { color: #ff2a75; margin-bottom: 5px; }
-        p { color: #64748b; font-size: 14px; margin-top: 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; font-size: 13px; }
-        th { background-color: #f8fafc; font-weight: bold; color: #0f172a; }
-        tr:nth-child(even) { background-color: #f8fafc; }
-      </style>
-    </head>
-    <body onload="window.print()">
-      <h1>${title}</h1>
-      <p>Generated on ${new Date().toLocaleDateString()}</p>
-      <table>
-        <thead>
-          <tr>${headers.map((h) => `<th>${h.toUpperCase()}</th>`).join("")}</tr>
-        </thead>
-        <tbody>
-          ${rows.map((row) => `<tr>${headers.map((h) => `<td>${row[h] ?? "—"}</td>`).join("")}</tr>`).join("")}
-        </tbody>
-      </table>
-    </body>
-    </html>
-  `;
-  res.setHeader("Content-Type", "text/html; charset=utf-8");
-  return res.status(200).send(html);
-}
-
-// ---------------------------------------------------------
-// 0. REPORT DATA API (FOR RENDERING INSIDE reports.html)
-// ---------------------------------------------------------
-router.get("/summary", async (req, res) => {
-  try {
-    const [students] = await db.query("SELECT COUNT(*) AS totalStudents FROM students");
-    const [performance] = await db.query(`
-      SELECT 
-        AVG(CASE WHEN total_marks > 0 THEN (marks_obtained / total_marks) * 100 ELSE 0 END) AS averagePercentage,
-        COUNT(*) AS totalAssessments
-      FROM performance
-    `);
-    const [attendance] = await db.query(`
-      SELECT 
-        COUNT(CASE WHEN status = 'P' THEN 1 END) AS presentCount,
-        COUNT(*) AS totalSessions
-      FROM attendance
-    `);
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        totalStudents: students[0]?.totalStudents || 0,
-        averagePerformance: Math.round(performance[0]?.averagePercentage || 0),
-        totalAssessments: performance[0]?.totalAssessments || 0,
-        attendanceRate: attendance[0]?.totalSessions > 0
-          ? Math.round((attendance[0].presentCount / attendance[0].totalSessions) * 100)
-          : 0
-      }
+// Attach listener to initialize once layout.js resolves app data
+if (window.App && typeof window.App.onReady === "function") {
+    window.App.onReady(function () {
+        renderReportsPage();
     });
-  } catch (err) {
-    console.error("❌ Error fetching reports summary:", err.message);
-    return res.status(200).json({
-      success: false,
-      data: { totalStudents: 0, averagePerformance: 0, totalAssessments: 0, attendanceRate: 0 }
-    });
-  }
-});
-
-// ---------------------------------------------------------
-// 1. ALL STUDENTS REPORT
-// ---------------------------------------------------------
-router.get("/students/excel", async (req, res) => {
-  try {
-    const [rows] = await db.query(
-      "SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, course, 'General') AS Department FROM students ORDER BY id DESC"
-    );
-    return sendCSVResponse(res, "All_Students_Report", rows);
-  } catch (err) {
-    console.error("❌ Error fetching students for Excel report:", err.message);
-    return res.status(500).send("Database Error: " + err.message);
-  }
-});
-
-router.get("/students/pdf", async (req, res) => {
-  try {
-    const [rows] = await db.query(
-      "SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, course, 'General') AS Department FROM students ORDER BY id DESC"
-    );
-    return sendPDFResponse(res, "All Student Profiles Directory", rows);
-  } catch (err) {
-    console.error("❌ Error fetching students for PDF report:", err.message);
-    return res.status(500).send("Database Error: " + err.message);
-  }
-});
-
-// ---------------------------------------------------------
-// 2. ATTENDANCE REPORT
-// ---------------------------------------------------------
-router.get("/attendance/excel", async (req, res) => {
-  const { range, startDate, endDate } = req.query;
-  const fromDate = getStartDateForRange(range, startDate);
-  const toDate = endDate || new Date().toISOString().slice(0, 10);
-
-  try {
-    const [rows] = await db.query(
-      `SELECT 
-        s.id AS Student_ID, 
-        s.name AS Student_Name, 
-        COALESCE(s.department, s.course, 'General') AS Department,
-        COUNT(CASE WHEN a.status IN ('P', 'present') THEN 1 END) AS Total_Present,
-        COUNT(CASE WHEN a.status IN ('A', 'absent') THEN 1 END) AS Total_Absent,
-        COUNT(CASE WHEN a.status = 'HD' THEN 1 END) AS Total_Half_Day,
-        COUNT(CASE WHEN a.status = 'L' THEN 1 END) AS Total_Leave
-       FROM students s 
-       LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
-       GROUP BY s.id, s.name, s.department, s.course
-       ORDER BY s.id DESC`,
-      [fromDate, toDate]
-    );
-    return sendCSVResponse(res, `Attendance_Report_${range || "all"}`, rows);
-  } catch (err) {
-    console.error("❌ Error fetching attendance for Excel:", err.message);
-    return res.status(500).send("Database Error: " + err.message);
-  }
-});
-
-router.get("/attendance/pdf", async (req, res) => {
-  const { range, startDate, endDate } = req.query;
-  const fromDate = getStartDateForRange(range, startDate);
-  const toDate = endDate || new Date().toISOString().slice(0, 10);
-
-  try {
-    const [rows] = await db.query(
-      `SELECT 
-        s.id AS Student_ID, 
-        s.name AS Student_Name, 
-        COALESCE(s.department, s.course, 'General') AS Department,
-        COUNT(CASE WHEN a.status IN ('P', 'present') THEN 1 END) AS Present,
-        COUNT(CASE WHEN a.status IN ('A', 'absent') THEN 1 END) AS Absent,
-        COUNT(CASE WHEN a.status = 'HD' THEN 1 END) AS Half_Day,
-        COUNT(CASE WHEN a.status = 'L' THEN 1 END) AS Leave_Days
-       FROM students s 
-       LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
-       GROUP BY s.id, s.name, s.department, s.course
-       ORDER BY s.id DESC`,
-      [fromDate, toDate]
-    );
-    return sendPDFResponse(res, `Attendance Report Summary (${fromDate} to ${toDate})`, rows);
-  } catch (err) {
-    console.error("❌ Error fetching attendance for PDF:", err.message);
-    return res.status(500).send("Database Error: " + err.message);
-  }
-});
-
-// ---------------------------------------------------------
-// 3. PERFORMANCE REPORT
-// ---------------------------------------------------------
-router.get("/performance/excel", async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT 
-        s.id AS Student_ID, 
-        s.name AS Student_Name, 
-        COALESCE(s.department, s.course, 'General') AS Department,
-        COALESCE(p.subject_name, 'General Assessment') AS Subject,
-        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.total_marks, p.max_marks, 100)) AS Marks,
-        COALESCE(p.grade, 'N/A') AS Grade
-      FROM students s
-      LEFT JOIN performance p ON s.id = p.student_id
-      ORDER BY s.id DESC
-    `);
-    return sendCSVResponse(res, "Performance_Report", rows);
-  } catch (err) {
-    console.error("❌ Error fetching performance for Excel:", err.message);
-    return res.status(500).send("Database Error: " + err.message);
-  }
-});
-
-router.get("/performance/pdf", async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT 
-        s.id AS Student_ID, 
-        s.name AS Student_Name, 
-        COALESCE(p.subject_name, 'General Assessment') AS Subject,
-        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.total_marks, p.max_marks, 100)) AS Marks,
-        COALESCE(p.grade, 'N/A') AS Grade
-      FROM students s
-      LEFT JOIN performance p ON s.id = p.student_id
-      ORDER BY s.id DESC
-    `);
-    return sendPDFResponse(res, "Academic Performance Report", rows);
-  } catch (err) {
-    console.error("❌ Error fetching performance for PDF:", err.message);
-    return res.status(500).send("Database Error: " + err.message);
-  }
-});
-
-// ---------------------------------------------------------
-// 4. COMPLETE COLLEGE REPORT
-// ---------------------------------------------------------
-router.get("/excel", async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, course, 'General') AS Department FROM students ORDER BY id DESC");
-    return sendCSVResponse(res, "Complete_College_Report", rows);
-  } catch (err) {
-    console.error("❌ Error fetching complete college report for Excel:", err.message);
-    return res.status(500).send("Database Error: " + err.message);
-  }
-});
-
-router.get("/pdf", async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, course, 'General') AS Department FROM students ORDER BY id DESC");
-    return sendPDFResponse(res, "Complete College Directory Report", rows);
-  } catch (err) {
-    console.error("❌ Error fetching complete college report for PDF:", err.message);
-    return res.status(500).send("Database Error: " + err.message);
-  }
-});
-
-module.exports = router;
+} else {
+    document.addEventListener("DOMContentLoaded", renderReportsPage);
+}
