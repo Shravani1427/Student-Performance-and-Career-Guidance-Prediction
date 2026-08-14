@@ -3,8 +3,16 @@
 // =====================================================
 // SERVER.JS
 // Student Performance & Career Guidance System
-// Backend: Node.js + Express.js + MySQL
-// Local Development + Vercel Serverless
+//
+// Backend:
+// Node.js + Express.js + MySQL
+//
+// Deployment:
+// Frontend -> Vercel
+// Backend  -> Vercel
+//
+// Backend file:
+// /backend/server.js
 // =====================================================
 
 const path = require("path");
@@ -17,23 +25,36 @@ const cors = require("cors");
 // LOAD ENVIRONMENT VARIABLES
 // =====================================================
 
+// backend/.env.local
 dotenv.config({
     path: path.join(__dirname, ".env.local")
 });
 
-if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
+// backend/.env
+if (
+    !process.env.DB_HOST &&
+    !process.env.DATABASE_URL
+) {
     dotenv.config({
         path: path.join(__dirname, ".env")
     });
 }
 
-if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
+// project-root/.env.local
+if (
+    !process.env.DB_HOST &&
+    !process.env.DATABASE_URL
+) {
     dotenv.config({
         path: path.join(__dirname, "../.env.local")
     });
 }
 
-if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
+// project-root/.env
+if (
+    !process.env.DB_HOST &&
+    !process.env.DATABASE_URL
+) {
     dotenv.config({
         path: path.join(__dirname, "../.env")
     });
@@ -71,7 +92,10 @@ const attendanceRoutesPath = path.join(
 let attendanceRoutes = null;
 
 if (fs.existsSync(attendanceRoutesPath)) {
-    attendanceRoutes = require("./routes/attendanceRoutes");
+
+    attendanceRoutes =
+        require("./routes/attendanceRoutes");
+
 }
 
 // =====================================================
@@ -84,83 +108,251 @@ const app = express();
 // PORT
 // =====================================================
 
-const PORT = process.env.PORT || 5000;
+const PORT =
+    process.env.PORT || 5000;
 
 // =====================================================
-// PUBLIC FRONTEND
+// PUBLIC FRONTEND PATH
 //
-// server.js is inside /backend
-// public is inside project root
+// Project:
 //
-// backend/server.js
-//       ↓
+// student-performance-guidance-system/
+// │
+// ├── backend/
+// │   └── server.js
+// │
+// └── public/
+//     ├── login.html
+//     └── js/
+//         └── api.js
+//
+// server.js is inside backend.
+// Therefore:
 // ../public
 // =====================================================
 
-const publicPath = path.join(__dirname, "../public");
+const publicPath =
+    path.join(
+        __dirname,
+        "../public"
+    );
 
-console.log("==============================================");
-console.log("Student Performance & Career Guidance System");
-console.log("==============================================");
-console.log("Backend directory:", __dirname);
-console.log("Public directory:", publicPath);
-console.log("Public exists:", fs.existsSync(publicPath));
-console.log("Vercel:", process.env.VERCEL || "false");
 
 // =====================================================
-// CORS
+// SERVER INFORMATION
 // =====================================================
+
+console.log(
+    "=============================================="
+);
+
+console.log(
+    "Student Performance & Career Guidance System"
+);
+
+console.log(
+    "=============================================="
+);
+
+console.log(
+    "Backend directory:",
+    __dirname
+);
+
+console.log(
+    "Public directory:",
+    publicPath
+);
+
+console.log(
+    "Public exists:",
+    fs.existsSync(publicPath)
+);
+
+console.log(
+    "Vercel:",
+    process.env.VERCEL || "false"
+);
+
+
+// =====================================================
+// CORS CONFIGURATION
+// =====================================================
+//
+// Frontend:
+// https://student-performance-and-career-guid.vercel.app
+//
+// Local development:
+// http://localhost:5500
+// http://localhost:3000
+//
+// =====================================================
+
+const allowedOrigins = [
+
+    "https://student-performance-and-career-guid.vercel.app",
+
+    "http://localhost:5500",
+
+    "http://localhost:3000",
+
+    "http://127.0.0.1:5500",
+
+    "http://127.0.0.1:3000"
+
+];
+
 
 app.use(
+
     cors({
-        origin: true,
+
+        origin: function (
+            origin,
+            callback
+        ) {
+
+            // -------------------------------------------------
+            // Allow requests without an Origin
+            //
+            // Useful for:
+            // Postman
+            // Server-to-server requests
+            // Some development tools
+            // -------------------------------------------------
+
+            if (!origin) {
+
+                return callback(
+                    null,
+                    true
+                );
+
+            }
+
+
+            // -------------------------------------------------
+            // Check allowed origins
+            // -------------------------------------------------
+
+            if (
+                allowedOrigins.includes(origin)
+            ) {
+
+                return callback(
+                    null,
+                    true
+                );
+
+            }
+
+
+            // -------------------------------------------------
+            // Block unknown origins
+            // -------------------------------------------------
+
+            console.warn(
+                "❌ CORS blocked origin:",
+                origin
+            );
+
+            return callback(
+                new Error(
+                    "Not allowed by CORS"
+                )
+            );
+
+        },
+
+
         credentials: true,
+
+
         methods: [
+
             "GET",
             "POST",
             "PUT",
             "PATCH",
             "DELETE",
             "OPTIONS"
+
         ],
+
+
         allowedHeaders: [
+
             "Content-Type",
-            "Authorization"
-        ]
+            "Authorization",
+            "Accept"
+
+        ],
+
+
+        optionsSuccessStatus: 204
+
     })
+
 );
+
+
+// =====================================================
+// PREFLIGHT REQUEST
+// =====================================================
+
+app.options(
+    "*",
+    cors()
+);
+
 
 // =====================================================
 // BODY PARSERS
 // =====================================================
 
-app.use(express.json());
-app.use(express.urlencoded({
-    extended: true
-}));
+app.use(
+    express.json()
+);
+
+app.use(
+    express.urlencoded({
+        extended: true
+    })
+);
+
 
 // =====================================================
 // REQUEST LOGGER
 // =====================================================
 
-app.use((req, res, next) => {
+app.use(
+    (req, res, next) => {
 
-    console.log(
-        `${new Date().toISOString()} - ${req.method} ${req.originalUrl}`
-    );
+        console.log(
+            `${new Date().toISOString()} - ${req.method} ${req.originalUrl}`
+        );
 
-    next();
-});
+        next();
+
+    }
+);
+
 
 // =====================================================
 // SERVE FRONTEND
 // =====================================================
 
-if (fs.existsSync(publicPath)) {
+if (
+    fs.existsSync(publicPath)
+) {
 
-    app.use(express.static(publicPath));
+    app.use(
+        express.static(publicPath)
+    );
 
-    console.log("✅ Public folder loaded successfully");
+    console.log(
+        "✅ Public folder loaded successfully"
+    );
 
 } else {
 
@@ -168,40 +360,67 @@ if (fs.existsSync(publicPath)) {
         "⚠️ Public folder not found:",
         publicPath
     );
+
 }
+
 
 // =====================================================
 // API BASE
 // GET /api
 // =====================================================
 
-app.get("/api", (req, res) => {
+app.get(
+    "/api",
+    (req, res) => {
 
-    res.status(200).json({
-        success: true,
-        message: "Express MySQL API is running",
-        status: "OK",
-        backend: "Node.js + Express.js",
-        database: "MySQL"
-    });
+        res.status(200).json({
 
-});
+            success: true,
+
+            message:
+                "Express MySQL API is running",
+
+            status: "OK",
+
+            backend:
+                "Node.js + Express.js",
+
+            database:
+                "MySQL"
+
+        });
+
+    }
+);
+
 
 // =====================================================
 // API BASE WITH TRAILING SLASH
 // GET /api/
 // =====================================================
 
-app.get("/api/", (req, res) => {
+app.get(
+    "/api/",
+    (req, res) => {
 
-    res.status(200).json({
-        success: true,
-        message: "Student Performance & Career Guidance API is running",
-        backend: "Node.js + Express.js",
-        database: "MySQL"
-    });
+        res.status(200).json({
 
-});
+            success: true,
+
+            message:
+                "Student Performance & Career Guidance API is running",
+
+            backend:
+                "Node.js + Express.js",
+
+            database:
+                "MySQL"
+
+        });
+
+    }
+);
+
 
 // =====================================================
 // AUTH ROUTES
@@ -216,6 +435,7 @@ app.use(
     authRoutes
 );
 
+
 // =====================================================
 // STUDENT ROUTES
 // =====================================================
@@ -224,6 +444,7 @@ app.use(
     "/api/students",
     studentRoutes
 );
+
 
 // =====================================================
 // ADMIN STUDENT ROUTES
@@ -234,6 +455,7 @@ app.use(
     studentRoutes
 );
 
+
 // =====================================================
 // PERFORMANCE ROUTES
 // =====================================================
@@ -242,6 +464,7 @@ app.use(
     "/api/performance",
     performanceRoutes
 );
+
 
 // =====================================================
 // CAREER ROUTES
@@ -257,6 +480,7 @@ app.use(
     careerRoutes
 );
 
+
 // =====================================================
 // REPORT ROUTES
 // =====================================================
@@ -265,6 +489,7 @@ app.use(
     "/api/reports",
     reportRoutes
 );
+
 
 // =====================================================
 // COMPLAINT ROUTES
@@ -275,6 +500,7 @@ app.use(
     complaintRoutes
 );
 
+
 // =====================================================
 // ADMIN ROUTES
 // =====================================================
@@ -284,6 +510,7 @@ app.use(
     adminRoutes
 );
 
+
 // =====================================================
 // SUBJECT ROUTES
 // =====================================================
@@ -292,6 +519,7 @@ app.use(
     "/api/subjects",
     subjectRoutes
 );
+
 
 // =====================================================
 // ATTENDANCE ROUTES
@@ -306,37 +534,62 @@ if (attendanceRoutes) {
 
 } else {
 
+    // -------------------------------------------------
+    // GET ATTENDANCE
+    // -------------------------------------------------
+
     app.get(
         "/api/attendance",
         (req, res) => {
 
             res.status(200).json({
+
                 success: true,
+
                 attendance: []
+
             });
 
         }
     );
+
+
+    // -------------------------------------------------
+    // ADD ATTENDANCE
+    // -------------------------------------------------
 
     app.post(
         "/api/attendance",
         (req, res) => {
 
             res.status(200).json({
+
                 success: true,
-                message: "Attendance saved"
+
+                message:
+                    "Attendance saved"
+
             });
 
         }
     );
+
+
+    // -------------------------------------------------
+    // DELETE ATTENDANCE
+    // -------------------------------------------------
 
     app.delete(
         "/api/attendance/:id",
         (req, res) => {
 
             res.status(200).json({
+
                 success: true,
-                message: "Attendance deleted"
+
+                message:
+                    "Attendance deleted"
+
             });
 
         }
@@ -344,8 +597,10 @@ if (attendanceRoutes) {
 
 }
 
+
 // =====================================================
-// ADMIN TEST
+// ADMIN API TEST
+// GET /api/admin-test
 // =====================================================
 
 app.get(
@@ -353,15 +608,21 @@ app.get(
     (req, res) => {
 
         res.status(200).json({
+
             success: true,
-            message: "Admin API test route is working"
+
+            message:
+                "Admin API test route is working"
+
         });
 
     }
 );
 
+
 // =====================================================
-// SUBJECT TEST
+// SUBJECT API TEST
+// GET /api/subjects-test
 // =====================================================
 
 app.get(
@@ -369,15 +630,21 @@ app.get(
     (req, res) => {
 
         res.status(200).json({
+
             success: true,
-            message: "Subjects API route is working"
+
+            message:
+                "Subjects API route is working"
+
         });
 
     }
 );
 
+
 // =====================================================
 // DATABASE TEST
+// GET /api/db-test
 // =====================================================
 
 app.get(
@@ -388,28 +655,41 @@ app.get(
 
             if (
                 !db ||
-                typeof db.getConnection !== "function"
+                typeof db.getConnection !==
+                    "function"
             ) {
 
                 return res.status(500).json({
+
                     success: false,
+
                     message:
                         "Database connection module is not configured correctly"
+
                 });
 
             }
 
+
             const connection =
                 await db.getConnection();
 
-            await connection.query("SELECT 1");
+
+            await connection.query(
+                "SELECT 1"
+            );
+
 
             connection.release();
 
+
             return res.status(200).json({
+
                 success: true,
+
                 message:
                     "MySQL database connection is working"
+
             });
 
         } catch (error) {
@@ -419,10 +699,14 @@ app.get(
                 error
             );
 
+
             return res.status(500).json({
+
                 success: false,
+
                 message:
                     "MySQL database connection failed"
+
             });
 
         }
@@ -430,8 +714,10 @@ app.get(
     }
 );
 
+
 // =====================================================
 // FRONTEND TEST
+// GET /frontend-test
 // =====================================================
 
 app.get(
@@ -442,10 +728,15 @@ app.get(
 
             success: true,
 
-            publicPath: publicPath,
+            publicPath:
+                publicPath,
+
 
             publicExists:
-                fs.existsSync(publicPath),
+                fs.existsSync(
+                    publicPath
+                ),
+
 
             loginHTML:
                 fs.existsSync(
@@ -455,6 +746,7 @@ app.get(
                     )
                 ),
 
+
             indexHTML:
                 fs.existsSync(
                     path.join(
@@ -462,6 +754,7 @@ app.get(
                         "index.html"
                     )
                 ),
+
 
             adminSubjectsHTML:
                 fs.existsSync(
@@ -471,6 +764,7 @@ app.get(
                     )
                 ),
 
+
             adminSubjectsJS:
                 fs.existsSync(
                     path.join(
@@ -479,6 +773,7 @@ app.get(
                         "admin-subjects.js"
                     )
                 ),
+
 
             apiJS:
                 fs.existsSync(
@@ -494,6 +789,7 @@ app.get(
     }
 );
 
+
 // =====================================================
 // ADMIN SUBJECTS PAGE
 // =====================================================
@@ -508,7 +804,10 @@ app.get(
                 "admin-subjects.html"
             );
 
-        if (!fs.existsSync(filePath)) {
+
+        if (
+            !fs.existsSync(filePath)
+        ) {
 
             return res.status(404).send(
                 "admin-subjects.html not found"
@@ -516,13 +815,18 @@ app.get(
 
         }
 
-        res.sendFile(filePath);
+
+        res.sendFile(
+            filePath
+        );
 
     }
 );
 
+
 // =====================================================
 // ROOT PAGE
+// GET /
 // =====================================================
 
 app.get(
@@ -535,13 +839,19 @@ app.get(
                 "login.html"
             );
 
+
         const indexFilePath =
             path.join(
                 publicPath,
                 "index.html"
             );
 
-        if (fs.existsSync(loginFilePath)) {
+
+        if (
+            fs.existsSync(
+                loginFilePath
+            )
+        ) {
 
             return res.sendFile(
                 loginFilePath
@@ -549,7 +859,12 @@ app.get(
 
         }
 
-        if (fs.existsSync(indexFilePath)) {
+
+        if (
+            fs.existsSync(
+                indexFilePath
+            )
+        ) {
 
             return res.sendFile(
                 indexFilePath
@@ -557,15 +872,22 @@ app.get(
 
         }
 
+
         return res.status(200).json({
+
             success: true,
+
             message:
                 "Student Performance & Career Guidance System is running",
-            api: "/api"
+
+            api:
+                "/api"
+
         });
 
     }
 );
+
 
 // =====================================================
 // API 404 HANDLER
@@ -593,10 +915,12 @@ app.use(
 
         }
 
+
         next();
 
     }
 );
+
 
 // =====================================================
 // GENERAL 404
@@ -612,6 +936,7 @@ app.use(
     }
 );
 
+
 // =====================================================
 // GLOBAL ERROR HANDLER
 // =====================================================
@@ -623,6 +948,7 @@ app.use(
             "❌ SERVER ERROR:",
             err
         );
+
 
         if (
             req.originalUrl === "/api" ||
@@ -637,13 +963,15 @@ app.use(
                     "Internal server error",
 
                 error:
-                    process.env.NODE_ENV === "development"
+                    process.env.NODE_ENV ===
+                    "development"
                         ? err.message
                         : undefined
 
             });
 
         }
+
 
         res.status(500).send(
             "Internal server error"
@@ -652,8 +980,13 @@ app.use(
     }
 );
 
+
 // =====================================================
 // LOCAL SERVER
+// =====================================================
+//
+// Vercel does NOT use app.listen().
+// Local development does.
 // =====================================================
 
 if (
@@ -667,19 +1000,23 @@ if (
 
             if (
                 db &&
-                typeof db.getConnection === "function"
+                typeof db.getConnection ===
+                    "function"
             ) {
 
                 const connection =
                     await db.getConnection();
 
+
                 console.log(
                     "✅ MYSQL DATABASE CONNECTED"
                 );
 
+
                 connection.release();
 
             }
+
 
             app.listen(
                 PORT,
@@ -709,6 +1046,7 @@ if (
     })();
 
 }
+
 
 // =====================================================
 // VERCEL SERVERLESS EXPORT
