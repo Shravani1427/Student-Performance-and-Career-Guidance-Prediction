@@ -31,30 +31,21 @@ dotenv.config({
 });
 
 // backend/.env
-if (
-    !process.env.DB_HOST &&
-    !process.env.DATABASE_URL
-) {
+if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
     dotenv.config({
         path: path.join(__dirname, ".env")
     });
 }
 
 // project-root/.env.local
-if (
-    !process.env.DB_HOST &&
-    !process.env.DATABASE_URL
-) {
+if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
     dotenv.config({
         path: path.join(__dirname, "../.env.local")
     });
 }
 
 // project-root/.env
-if (
-    !process.env.DB_HOST &&
-    !process.env.DATABASE_URL
-) {
+if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
     dotenv.config({
         path: path.join(__dirname, "../.env")
     });
@@ -92,10 +83,7 @@ const attendanceRoutesPath = path.join(
 let attendanceRoutes = null;
 
 if (fs.existsSync(attendanceRoutesPath)) {
-
-    attendanceRoutes =
-        require("./routes/attendanceRoutes");
-
+    attendanceRoutes = require("./routes/attendanceRoutes");
 }
 
 // =====================================================
@@ -108,13 +96,12 @@ const app = express();
 // PORT
 // =====================================================
 
-const PORT =
-    process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
 // =====================================================
 // PUBLIC FRONTEND PATH
 //
-// Project:
+// Project structure:
 //
 // student-performance-guidance-system/
 // │
@@ -123,57 +110,26 @@ const PORT =
 // │
 // └── public/
 //     ├── login.html
+//     ├── index.html
 //     └── js/
 //         └── api.js
 //
-// server.js is inside backend.
-// Therefore:
-// ../public
 // =====================================================
 
-const publicPath =
-    path.join(
-        __dirname,
-        "../public"
-    );
-
+const publicPath = path.join(__dirname, "../public");
 
 // =====================================================
 // SERVER INFORMATION
 // =====================================================
 
-console.log(
-    "=============================================="
-);
+console.log("==============================================");
+console.log("Student Performance & Career Guidance System");
+console.log("==============================================");
 
-console.log(
-    "Student Performance & Career Guidance System"
-);
-
-console.log(
-    "=============================================="
-);
-
-console.log(
-    "Backend directory:",
-    __dirname
-);
-
-console.log(
-    "Public directory:",
-    publicPath
-);
-
-console.log(
-    "Public exists:",
-    fs.existsSync(publicPath)
-);
-
-console.log(
-    "Vercel:",
-    process.env.VERCEL || "false"
-);
-
+console.log("Backend directory:", __dirname);
+console.log("Public directory:", publicPath);
+console.log("Public exists:", fs.existsSync(publicPath));
+console.log("Vercel:", process.env.VERCEL || "false");
 
 // =====================================================
 // CORS CONFIGURATION
@@ -185,126 +141,72 @@ console.log(
 // Local development:
 // http://localhost:5500
 // http://localhost:3000
+// http://localhost:5000
 //
 // =====================================================
 
 const allowedOrigins = [
-
     "https://student-performance-and-career-guid.vercel.app",
-
     "http://localhost:5500",
-
     "http://localhost:3000",
-
+    "http://localhost:5000",
     "http://127.0.0.1:5500",
-
-    "http://127.0.0.1:3000"
-
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5000"
 ];
 
+// =====================================================
+// CORS MIDDLEWARE
+// =====================================================
 
 app.use(
-
     cors({
+        origin: function (origin, callback) {
 
-        origin: function (
-            origin,
-            callback
-        ) {
-
-            // -------------------------------------------------
-            // Allow requests without an Origin
-            //
-            // Useful for:
-            // Postman
-            // Server-to-server requests
-            // Some development tools
-            // -------------------------------------------------
+            // Allow requests without Origin
+            // Useful for Postman and server-side requests
 
             if (!origin) {
-
-                return callback(
-                    null,
-                    true
-                );
-
+                return callback(null, true);
             }
 
+            // Allow known frontend origins
 
-            // -------------------------------------------------
-            // Check allowed origins
-            // -------------------------------------------------
-
-            if (
-                allowedOrigins.includes(origin)
-            ) {
-
-                return callback(
-                    null,
-                    true
-                );
-
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
             }
-
-
-            // -------------------------------------------------
-            // Block unknown origins
-            // -------------------------------------------------
 
             console.warn(
-                "❌ CORS blocked origin:",
+                "CORS blocked origin:",
                 origin
             );
 
-            return callback(
-                new Error(
-                    "Not allowed by CORS"
-                )
-            );
+            // Do not crash server
+            // Simply deny the origin
 
+            return callback(null, false);
         },
-
 
         credentials: true,
 
-
         methods: [
-
             "GET",
             "POST",
             "PUT",
             "PATCH",
             "DELETE",
             "OPTIONS"
-
         ],
 
-
         allowedHeaders: [
-
             "Content-Type",
             "Authorization",
             "Accept"
-
         ],
 
-
         optionsSuccessStatus: 204
-
     })
-
 );
-
-
-// =====================================================
-// PREFLIGHT REQUEST
-// =====================================================
-
-app.options(
-    "*",
-    cors()
-);
-
 
 // =====================================================
 // BODY PARSERS
@@ -320,7 +222,6 @@ app.use(
     })
 );
 
-
 // =====================================================
 // REQUEST LOGGER
 // =====================================================
@@ -333,36 +234,30 @@ app.use(
         );
 
         next();
-
     }
 );
-
 
 // =====================================================
 // SERVE FRONTEND
 // =====================================================
 
-if (
-    fs.existsSync(publicPath)
-) {
+if (fs.existsSync(publicPath)) {
 
     app.use(
         express.static(publicPath)
     );
 
     console.log(
-        "✅ Public folder loaded successfully"
+        "Public folder loaded successfully"
     );
 
 } else {
 
     console.warn(
-        "⚠️ Public folder not found:",
+        "Public folder not found:",
         publicPath
     );
-
 }
-
 
 // =====================================================
 // API BASE
@@ -387,12 +282,9 @@ app.get(
 
             database:
                 "MySQL"
-
         });
-
     }
 );
-
 
 // =====================================================
 // API BASE WITH TRAILING SLASH
@@ -415,12 +307,9 @@ app.get(
 
             database:
                 "MySQL"
-
         });
-
     }
 );
-
 
 // =====================================================
 // AUTH ROUTES
@@ -435,7 +324,6 @@ app.use(
     authRoutes
 );
 
-
 // =====================================================
 // STUDENT ROUTES
 // =====================================================
@@ -444,7 +332,6 @@ app.use(
     "/api/students",
     studentRoutes
 );
-
 
 // =====================================================
 // ADMIN STUDENT ROUTES
@@ -455,7 +342,6 @@ app.use(
     studentRoutes
 );
 
-
 // =====================================================
 // PERFORMANCE ROUTES
 // =====================================================
@@ -464,7 +350,6 @@ app.use(
     "/api/performance",
     performanceRoutes
 );
-
 
 // =====================================================
 // CAREER ROUTES
@@ -480,7 +365,6 @@ app.use(
     careerRoutes
 );
 
-
 // =====================================================
 // REPORT ROUTES
 // =====================================================
@@ -489,7 +373,6 @@ app.use(
     "/api/reports",
     reportRoutes
 );
-
 
 // =====================================================
 // COMPLAINT ROUTES
@@ -500,7 +383,6 @@ app.use(
     complaintRoutes
 );
 
-
 // =====================================================
 // ADMIN ROUTES
 // =====================================================
@@ -510,7 +392,6 @@ app.use(
     adminRoutes
 );
 
-
 // =====================================================
 // SUBJECT ROUTES
 // =====================================================
@@ -519,7 +400,6 @@ app.use(
     "/api/subjects",
     subjectRoutes
 );
-
 
 // =====================================================
 // ATTENDANCE ROUTES
@@ -534,9 +414,7 @@ if (attendanceRoutes) {
 
 } else {
 
-    // -------------------------------------------------
     // GET ATTENDANCE
-    // -------------------------------------------------
 
     app.get(
         "/api/attendance",
@@ -547,16 +425,11 @@ if (attendanceRoutes) {
                 success: true,
 
                 attendance: []
-
             });
-
         }
     );
 
-
-    // -------------------------------------------------
     // ADD ATTENDANCE
-    // -------------------------------------------------
 
     app.post(
         "/api/attendance",
@@ -568,16 +441,11 @@ if (attendanceRoutes) {
 
                 message:
                     "Attendance saved"
-
             });
-
         }
     );
 
-
-    // -------------------------------------------------
     // DELETE ATTENDANCE
-    // -------------------------------------------------
 
     app.delete(
         "/api/attendance/:id",
@@ -589,14 +457,10 @@ if (attendanceRoutes) {
 
                 message:
                     "Attendance deleted"
-
             });
-
         }
     );
-
 }
-
 
 // =====================================================
 // ADMIN API TEST
@@ -613,12 +477,9 @@ app.get(
 
             message:
                 "Admin API test route is working"
-
         });
-
     }
 );
-
 
 // =====================================================
 // SUBJECT API TEST
@@ -635,12 +496,9 @@ app.get(
 
             message:
                 "Subjects API route is working"
-
         });
-
     }
 );
-
 
 // =====================================================
 // DATABASE TEST
@@ -651,12 +509,13 @@ app.get(
     "/api/db-test",
     async (req, res) => {
 
+        let connection;
+
         try {
 
             if (
                 !db ||
-                typeof db.getConnection !==
-                    "function"
+                typeof db.getConnection !== "function"
             ) {
 
                 return res.status(500).json({
@@ -665,23 +524,15 @@ app.get(
 
                     message:
                         "Database connection module is not configured correctly"
-
                 });
-
             }
 
-
-            const connection =
+            connection =
                 await db.getConnection();
-
 
             await connection.query(
                 "SELECT 1"
             );
-
-
-            connection.release();
-
 
             return res.status(200).json({
 
@@ -689,31 +540,36 @@ app.get(
 
                 message:
                     "MySQL database connection is working"
-
             });
 
         } catch (error) {
 
             console.error(
-                "❌ Database test failed:",
+                "Database test failed:",
                 error
             );
-
 
             return res.status(500).json({
 
                 success: false,
 
                 message:
-                    "MySQL database connection failed"
+                    "MySQL database connection failed",
 
+                error:
+                    process.env.NODE_ENV === "development"
+                        ? error.message
+                        : undefined
             });
 
-        }
+        } finally {
 
+            if (connection) {
+                connection.release();
+            }
+        }
     }
 );
-
 
 // =====================================================
 // FRONTEND TEST
@@ -731,12 +587,8 @@ app.get(
             publicPath:
                 publicPath,
 
-
             publicExists:
-                fs.existsSync(
-                    publicPath
-                ),
-
+                fs.existsSync(publicPath),
 
             loginHTML:
                 fs.existsSync(
@@ -746,7 +598,6 @@ app.get(
                     )
                 ),
 
-
             indexHTML:
                 fs.existsSync(
                     path.join(
@@ -755,7 +606,6 @@ app.get(
                     )
                 ),
 
-
             adminSubjectsHTML:
                 fs.existsSync(
                     path.join(
@@ -763,7 +613,6 @@ app.get(
                         "admin-subjects.html"
                     )
                 ),
-
 
             adminSubjectsJS:
                 fs.existsSync(
@@ -774,7 +623,6 @@ app.get(
                     )
                 ),
 
-
             apiJS:
                 fs.existsSync(
                     path.join(
@@ -783,12 +631,9 @@ app.get(
                         "api.js"
                     )
                 )
-
         });
-
     }
 );
-
 
 // =====================================================
 // ADMIN SUBJECTS PAGE
@@ -804,25 +649,18 @@ app.get(
                 "admin-subjects.html"
             );
 
-
-        if (
-            !fs.existsSync(filePath)
-        ) {
+        if (!fs.existsSync(filePath)) {
 
             return res.status(404).send(
                 "admin-subjects.html not found"
             );
-
         }
 
-
-        res.sendFile(
+        return res.sendFile(
             filePath
         );
-
     }
 );
-
 
 // =====================================================
 // ROOT PAGE
@@ -839,39 +677,29 @@ app.get(
                 "login.html"
             );
 
-
         const indexFilePath =
             path.join(
                 publicPath,
                 "index.html"
             );
 
-
         if (
-            fs.existsSync(
-                loginFilePath
-            )
+            fs.existsSync(loginFilePath)
         ) {
 
             return res.sendFile(
                 loginFilePath
             );
-
         }
 
-
         if (
-            fs.existsSync(
-                indexFilePath
-            )
+            fs.existsSync(indexFilePath)
         ) {
 
             return res.sendFile(
                 indexFilePath
             );
-
         }
-
 
         return res.status(200).json({
 
@@ -882,12 +710,9 @@ app.get(
 
             api:
                 "/api"
-
         });
-
     }
 );
-
 
 // =====================================================
 // API 404 HANDLER
@@ -910,17 +735,12 @@ app.use(
 
                 path:
                     req.originalUrl
-
             });
-
         }
 
-
         next();
-
     }
 );
-
 
 // =====================================================
 // GENERAL 404
@@ -929,13 +749,18 @@ app.use(
 app.use(
     (req, res) => {
 
-        res.status(404).send(
-            "Page not found"
-        );
+        res.status(404).json({
 
+            success: false,
+
+            message:
+                "Page not found",
+
+            path:
+                req.originalUrl
+        });
     }
 );
-
 
 // =====================================================
 // GLOBAL ERROR HANDLER
@@ -945,10 +770,9 @@ app.use(
     (err, req, res, next) => {
 
         console.error(
-            "❌ SERVER ERROR:",
+            "SERVER ERROR:",
             err
         );
-
 
         if (
             req.originalUrl === "/api" ||
@@ -963,27 +787,20 @@ app.use(
                     "Internal server error",
 
                 error:
-                    process.env.NODE_ENV ===
-                    "development"
+                    process.env.NODE_ENV === "development"
                         ? err.message
                         : undefined
-
             });
-
         }
 
-
-        res.status(500).send(
+        return res.status(500).send(
             "Internal server error"
         );
-
     }
 );
 
-
 // =====================================================
 // LOCAL SERVER
-// =====================================================
 //
 // Vercel does NOT use app.listen().
 // Local development does.
@@ -1000,23 +817,18 @@ if (
 
             if (
                 db &&
-                typeof db.getConnection ===
-                    "function"
+                typeof db.getConnection === "function"
             ) {
 
                 const connection =
                     await db.getConnection();
 
-
                 console.log(
-                    "✅ MYSQL DATABASE CONNECTED"
+                    "MYSQL DATABASE CONNECTED"
                 );
 
-
                 connection.release();
-
             }
-
 
             app.listen(
                 PORT,
@@ -1024,29 +836,24 @@ if (
                 () => {
 
                     console.log(
-                        `🚀 Local server running at http://localhost:${PORT}`
+                        `Local server running at http://localhost:${PORT}`
                     );
 
                     console.log(
-                        `🔗 API: http://localhost:${PORT}/api`
+                        `API: http://localhost:${PORT}/api`
                     );
-
                 }
             );
 
         } catch (error) {
 
             console.error(
-                "❌ Local server startup failed:",
+                "Local server startup failed:",
                 error
             );
-
         }
-
     })();
-
 }
-
 
 // =====================================================
 // VERCEL SERVERLESS EXPORT
