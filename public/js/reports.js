@@ -82,12 +82,51 @@ function sendPDFResponse(res, title, rows) {
 }
 
 // ---------------------------------------------------------
+// 0. REPORT DATA API (FOR RENDERING INSIDE reports.html)
+// ---------------------------------------------------------
+router.get("/summary", async (req, res) => {
+  try {
+    const [students] = await db.query("SELECT COUNT(*) AS totalStudents FROM students");
+    const [performance] = await db.query(`
+      SELECT 
+        AVG(CASE WHEN total_marks > 0 THEN (marks_obtained / total_marks) * 100 ELSE 0 END) AS averagePercentage,
+        COUNT(*) AS totalAssessments
+      FROM performance
+    `);
+    const [attendance] = await db.query(`
+      SELECT 
+        COUNT(CASE WHEN status = 'P' THEN 1 END) AS presentCount,
+        COUNT(*) AS totalSessions
+      FROM attendance
+    `);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalStudents: students[0]?.totalStudents || 0,
+        averagePerformance: Math.round(performance[0]?.averagePercentage || 0),
+        totalAssessments: performance[0]?.totalAssessments || 0,
+        attendanceRate: attendance[0]?.totalSessions > 0
+          ? Math.round((attendance[0].presentCount / attendance[0].totalSessions) * 100)
+          : 0
+      }
+    });
+  } catch (err) {
+    console.error("❌ Error fetching reports summary:", err.message);
+    return res.status(200).json({
+      success: false,
+      data: { totalStudents: 0, averagePerformance: 0, totalAssessments: 0, attendanceRate: 0 }
+    });
+  }
+});
+
+// ---------------------------------------------------------
 // 1. ALL STUDENTS REPORT
 // ---------------------------------------------------------
 router.get("/students/excel", async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, 'General') AS Department FROM students ORDER BY id DESC"
+      "SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, course, 'General') AS Department FROM students ORDER BY id DESC"
     );
     return sendCSVResponse(res, "All_Students_Report", rows);
   } catch (err) {
@@ -99,7 +138,7 @@ router.get("/students/excel", async (req, res) => {
 router.get("/students/pdf", async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, 'General') AS Department FROM students ORDER BY id DESC"
+      "SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, course, 'General') AS Department FROM students ORDER BY id DESC"
     );
     return sendPDFResponse(res, "All Student Profiles Directory", rows);
   } catch (err) {
@@ -121,14 +160,14 @@ router.get("/attendance/excel", async (req, res) => {
       `SELECT 
         s.id AS Student_ID, 
         s.name AS Student_Name, 
-        COALESCE(s.department, 'General') AS Department,
-        COUNT(CASE WHEN a.status = 'P' THEN 1 END) AS Total_Present,
-        COUNT(CASE WHEN a.status = 'A' THEN 1 END) AS Total_Absent,
+        COALESCE(s.department, s.course, 'General') AS Department,
+        COUNT(CASE WHEN a.status IN ('P', 'present') THEN 1 END) AS Total_Present,
+        COUNT(CASE WHEN a.status IN ('A', 'absent') THEN 1 END) AS Total_Absent,
         COUNT(CASE WHEN a.status = 'HD' THEN 1 END) AS Total_Half_Day,
         COUNT(CASE WHEN a.status = 'L' THEN 1 END) AS Total_Leave
        FROM students s 
        LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
-       GROUP BY s.id, s.name, s.department
+       GROUP BY s.id, s.name, s.department, s.course
        ORDER BY s.id DESC`,
       [fromDate, toDate]
     );
@@ -149,14 +188,14 @@ router.get("/attendance/pdf", async (req, res) => {
       `SELECT 
         s.id AS Student_ID, 
         s.name AS Student_Name, 
-        COALESCE(s.department, 'General') AS Department,
-        COUNT(CASE WHEN a.status = 'P' THEN 1 END) AS Present,
-        COUNT(CASE WHEN a.status = 'A' THEN 1 END) AS Absent,
+        COALESCE(s.department, s.course, 'General') AS Department,
+        COUNT(CASE WHEN a.status IN ('P', 'present') THEN 1 END) AS Present,
+        COUNT(CASE WHEN a.status IN ('A', 'absent') THEN 1 END) AS Absent,
         COUNT(CASE WHEN a.status = 'HD' THEN 1 END) AS Half_Day,
         COUNT(CASE WHEN a.status = 'L' THEN 1 END) AS Leave_Days
        FROM students s 
        LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
-       GROUP BY s.id, s.name, s.department
+       GROUP BY s.id, s.name, s.department, s.course
        ORDER BY s.id DESC`,
       [fromDate, toDate]
     );
@@ -176,9 +215,9 @@ router.get("/performance/excel", async (req, res) => {
       SELECT 
         s.id AS Student_ID, 
         s.name AS Student_Name, 
-        COALESCE(s.department, 'General') AS Department,
+        COALESCE(s.department, s.course, 'General') AS Department,
         COALESCE(p.subject_name, 'General Assessment') AS Subject,
-        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.max_marks, 100)) AS Marks,
+        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.total_marks, p.max_marks, 100)) AS Marks,
         COALESCE(p.grade, 'N/A') AS Grade
       FROM students s
       LEFT JOIN performance p ON s.id = p.student_id
@@ -198,7 +237,7 @@ router.get("/performance/pdf", async (req, res) => {
         s.id AS Student_ID, 
         s.name AS Student_Name, 
         COALESCE(p.subject_name, 'General Assessment') AS Subject,
-        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.max_marks, 100)) AS Marks,
+        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.total_marks, p.max_marks, 100)) AS Marks,
         COALESCE(p.grade, 'N/A') AS Grade
       FROM students s
       LEFT JOIN performance p ON s.id = p.student_id
@@ -216,7 +255,7 @@ router.get("/performance/pdf", async (req, res) => {
 // ---------------------------------------------------------
 router.get("/excel", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT id AS ID, name AS Name, email AS Email, department AS Department FROM students ORDER BY id DESC");
+    const [rows] = await db.query("SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, course, 'General') AS Department FROM students ORDER BY id DESC");
     return sendCSVResponse(res, "Complete_College_Report", rows);
   } catch (err) {
     console.error("❌ Error fetching complete college report for Excel:", err.message);
@@ -226,7 +265,7 @@ router.get("/excel", async (req, res) => {
 
 router.get("/pdf", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT id AS ID, name AS Name, email AS Email, department AS Department FROM students ORDER BY id DESC");
+    const [rows] = await db.query("SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, course, 'General') AS Department FROM students ORDER BY id DESC");
     return sendPDFResponse(res, "Complete College Directory Report", rows);
   } catch (err) {
     console.error("❌ Error fetching complete college report for PDF:", err.message);

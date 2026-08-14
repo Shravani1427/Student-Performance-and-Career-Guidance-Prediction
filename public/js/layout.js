@@ -160,9 +160,9 @@
             }
             console.log("API REQUEST: GET", endpoint);
             const response = await api.request(endpoint);
-            return response?.performance || response?.data || [];
+            return response?.performance || response?.data || (Array.isArray(response) ? response : []);
         } catch (error) {
-            console.error("Performance API error:", error);
+            console.warn(`Performance API fallback used for ID ${studentId}:`, error);
             return [];
         }
     }
@@ -178,8 +178,8 @@
             const response = await api.request("/api/performance/analytics/" + encodeURIComponent(studentId));
             return response?.data || response?.analytics || response || null;
         } catch (error) {
-            console.error("Analytics API error:", error);
-            return null;
+            console.warn(`Analytics API fallback used for ID ${studentId}:`, error);
+            return { percentage: 0, grade: "N/A" };
         }
     }
 
@@ -345,23 +345,29 @@
 
             if (!Array.isArray(students)) students = [];
 
-            // Load in parallel to avoid Vercel function timeouts
-            return await Promise.all(
+            // Execute student queries safely with fallback resolution
+            const results = await Promise.allSettled(
                 students.map(async (item) => {
-                    try {
-                        const [performanceRows, analytics] = await Promise.all([
-                            loadStudentPerformance(item.id),
-                            loadAnalytics(item.id)
-                        ]);
-                        return buildStudent(item, item, performanceRows, analytics);
-                    } catch (error) {
-                        return buildStudent(item, item, [], null);
-                    }
+                    const [performanceRows, analytics] = await Promise.allSettled([
+                        loadStudentPerformance(item.id),
+                        loadAnalytics(item.id)
+                    ]);
+
+                    const perf = performanceRows.status === "fulfilled" ? performanceRows.value : [];
+                    const anal = analytics.status === "fulfilled" ? analytics.value : null;
+
+                    return buildStudent(item, item, perf, anal);
                 })
             );
+
+            return results.map((res, index) => {
+                if (res.status === "fulfilled") return res.value;
+                const fallbackItem = students[index] || {};
+                return buildStudent(fallbackItem, fallbackItem, [], null);
+            });
         } catch (error) {
             console.error("Admin students API error:", error);
-            throw error;
+            return [];
         }
     }
 

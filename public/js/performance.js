@@ -43,17 +43,19 @@ function passOrFail(pct) {
 ===================================================== */
 
 function performanceStudentSelector(currentStudent) {
-    const isAdmin = App.session && App.session.role === "admin";
+    const isAdmin = window.App && window.App.session && window.App.session.role === "admin";
     if (!isAdmin) return "";
 
-    const students = (App.data && Array.isArray(App.data.students)) ? App.data.students : [];
+    const students = (window.App && window.App.data && Array.isArray(window.App.data.students)) ? window.App.data.students : [];
     if (students.length === 0) return "";
+
+    const currentId = currentStudent ? Number(currentStudent.id) : 0;
 
     const options = students
         .map(
             (item) =>
                 `<option value="${item.id}" ${
-                    Number(item.id) === Number(currentStudent.id) ? "selected" : ""
+                    Number(item.id) === currentId ? "selected" : ""
                 }>${escPerformance(item.name)}</option>`
         )
         .join("");
@@ -83,18 +85,13 @@ function performanceStudentSelector(currentStudent) {
 function getSubjectDropdownOptions(student) {
     let availableSubjects = [];
 
-    // 1. Try global subjects in App.data
-    if (App.data && Array.isArray(App.data.subjects) && App.data.subjects.length > 0) {
-        availableSubjects = App.data.subjects;
-    } 
-    // 2. Fall back to student subjects
-    else if (student && Array.isArray(student.subjects) && student.subjects.length > 0) {
+    if (window.App && window.App.data && Array.isArray(window.App.data.subjects) && window.App.data.subjects.length > 0) {
+        availableSubjects = window.App.data.subjects;
+    } else if (student && Array.isArray(student.subjects) && student.subjects.length > 0) {
         availableSubjects = student.subjects;
-    } 
-    // 3. Fall back to extracting subjects across all students
-    else {
+    } else if (window.App && window.App.data && Array.isArray(window.App.data.students)) {
         const map = new Map();
-        (App.data.students || []).forEach((s) => {
+        window.App.data.students.forEach((s) => {
             (s.subjects || []).forEach((sub) => {
                 if (sub && (sub.name || sub.id)) {
                     map.set(sub.name || sub.id, sub);
@@ -118,23 +115,24 @@ function getSubjectDropdownOptions(student) {
 }
 
 function normalizePerformance(row) {
-    const obtained = Number(row.marks_obtained ?? 0);
-    const total = Number(row.total_marks ?? 100);
+    if (!row) return null;
+    const obtained = Number(row.marks_obtained ?? row.marksObtained ?? 0);
+    const total = Number(row.total_marks ?? row.totalMarks ?? 100);
     const percentage = total > 0 ? Math.round((obtained / total) * 100 * 100) / 100 : 0;
 
     return {
-        id: Number(row.id),
-        name: row.subject_name || "Unknown Subject",
-        code: row.subject_code || `SUB-${row.id}`,
+        id: Number(row.id || 0),
+        name: row.subject_name || row.subjectName || "Unknown Subject",
+        code: row.subject_code || row.subjectCode || `SUB-${row.id || "0"}`,
         semester: Number(row.semester || 1),
         total: total,
         obtained: obtained,
-        internal: Number(row.internal_marks ?? 0),
-        practical: Number(row.practical_marks ?? 0),
-        assignment: Number(row.assignment_marks ?? 0),
+        internal: Number(row.internal_marks ?? row.internalMarks ?? 0),
+        practical: Number(row.practical_marks ?? row.practicalMarks ?? 0),
+        assignment: Number(row.assignment_marks ?? row.assignmentMarks ?? 0),
         percentage: percentage,
         attendance: Number(row.attendance ?? 0),
-        academicYear: row.academic_year || ""
+        academicYear: row.academic_year || row.academicYear || ""
     };
 }
 
@@ -158,20 +156,24 @@ function calculatePerformance(subjects) {
 }
 
 async function loadStudent(studentId) {
+    if (!studentId) return { id: 0, name: "Student" };
     try {
         const response = await apiPerformance.request(`/api/students/${studentId}`);
-        return response.data || response.student || response;
+        return response?.data || response?.student || response || { id: studentId, name: "Student" };
     } catch (e) {
+        console.warn(`Could not load student profile for ${studentId}:`, e);
         return { id: studentId, name: "Student" };
     }
 }
 
 async function loadPerformance(studentId) {
+    if (!studentId) return [];
     try {
         const response = await apiPerformance.request(`/api/performance?studentId=${studentId}`);
-        const rows = response.performance || response.data || [];
-        return Array.isArray(rows) ? rows.map(normalizePerformance) : [];
+        const rows = response?.performance || response?.data || (Array.isArray(response) ? response : []);
+        return Array.isArray(rows) ? rows.map(normalizePerformance).filter(Boolean) : [];
     } catch (e) {
+        console.warn(`Could not load performance records for ${studentId}:`, e);
         return [];
     }
 }
@@ -183,8 +185,11 @@ function getCurrentStudentId() {
     if (window.App && window.App.session && window.App.session.studentId) {
         return Number(window.App.session.studentId);
     }
+    if (window.App && window.App.data && Array.isArray(window.App.data.students) && window.App.data.students.length > 0) {
+        return Number(window.App.data.students[0].id);
+    }
     try {
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const user = JSON.parse(localStorage.getItem("auth_user") || localStorage.getItem("user") || "{}");
         return Number(user.id || user.student_id || 0);
     } catch (error) {
         return 0;
@@ -230,7 +235,7 @@ function renderReportCard(student) {
                         <p>No academic records available yet.</p>
                     </div>
                 </div>
-                <div style="padding:20px;">Add performance records to generate report card.</div>
+                <div style="padding:20px; color:#64748b;">Add performance records to generate the report card.</div>
             </section>
         `;
     }
@@ -312,16 +317,14 @@ function renderReportCard(student) {
 }
 
 async function renderPerformancePage() {
-    App.renderPage = renderPerformancePage;
+    if (window.App) window.App.renderPage = renderPerformancePage;
     const pageContent = document.getElementById("page-content");
     if (!pageContent) return;
 
     try {
         const studentId = getCurrentStudentId();
-        if (!studentId) throw new Error("Student ID not found.");
-
-        const studentData = await loadStudent(studentId);
-        const subjects = await loadPerformance(studentId);
+        const studentData = studentId ? await loadStudent(studentId) : { id: 0, name: "Student" };
+        const subjects = studentId ? await loadPerformance(studentId) : [];
 
         const performance = calculatePerformance(subjects);
 
@@ -330,7 +333,7 @@ async function renderPerformancePage() {
             name: studentData.name || "Student",
             email: studentData.email || "",
             phone: studentData.phone || "",
-            semester: studentData.semester || subjects[0]?.semester || 1,
+            semester: Number(studentData.semester || subjects[0]?.semester || 1),
             subjects: Array.isArray(subjects) ? subjects : [],
             performance: performance
         };
@@ -338,7 +341,7 @@ async function renderPerformancePage() {
         const sortedSubjects = student.subjects.slice().sort((a, b) => Number(b.percentage) - Number(a.percentage));
         const highest = sortedSubjects.length > 0 ? sortedSubjects[0] : null;
 
-        const isAdmin = App.session && App.session.role === "admin";
+        const isAdmin = window.App && window.App.session && window.App.session.role === "admin";
 
         const adminForm = isAdmin
             ? `
@@ -423,7 +426,7 @@ async function renderPerformancePage() {
                         <tbody>
                             ${
                                 student.subjects.length === 0
-                                    ? `<tr><td colspan="${isAdmin ? 7 : 6}" style="text-align:center;padding:30px;">No performance records found for ${escPerformance(student.name)}.</td></tr>`
+                                    ? `<tr><td colspan="${isAdmin ? 7 : 6}" style="text-align:center;padding:30px;color:#64748b;">No performance records found for ${escPerformance(student.name)}.</td></tr>`
                                     : student.subjects.map((s) => `
                                         <tr>
                                             <td><strong>${escPerformance(s.name)}</strong></td>
@@ -452,9 +455,12 @@ async function renderPerformancePage() {
                     ChartTools.draw("marks-chart", "bar", student.subjects.map((item) => item.name), student.subjects.map((item) => Number(item.percentage)), ["#ec4899"]);
                     ChartTools.draw("mix-chart", "doughnut", student.subjects.slice(0, 5).map((item) => item.name), student.subjects.slice(0, 5).map((item) => Number(item.obtained)), ["#2563eb", "#ec4899", "#8b5cf6", "#38bdf8", "#f97316"]);
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.warn("Chart rendering skipped:", err);
+            }
         }
     } catch (error) {
+        console.error("Render performance page error:", error);
         pageContent.innerHTML = `<section class="panel"><div style="padding:20px;"><h2>Unable to load performance</h2><p>${escPerformance(error.message)}</p></div></section>`;
     }
 }
@@ -463,7 +469,7 @@ function setupPerformanceEvents() {
     const pageContent = document.getElementById("page-content");
     if (!pageContent) return;
 
-    // LIVE NAME SEARCH FILTER WITH AUTOMATIC SELECTION SWITCH
+    // Live search filter
     pageContent.addEventListener("input", function (event) {
         if (event.target.id === "student-search-input") {
             const searchTerm = event.target.value.toLowerCase().trim();
@@ -501,7 +507,7 @@ function setupPerformanceEvents() {
         }
     });
 
-    // MANUAL DROPDOWN CHANGE
+    // Dropdown change
     pageContent.addEventListener("change", function (event) {
         if (event.target.id === "performance-student-selector") {
             const chosenId = Number(event.target.value);
@@ -516,7 +522,7 @@ function setupPerformanceEvents() {
         }
     });
 
-    // FORM SUBMIT
+    // Form submit
     pageContent.addEventListener("submit", async function (event) {
         if (event.target.id !== "performance-form") return;
         event.preventDefault();
@@ -532,17 +538,19 @@ function setupPerformanceEvents() {
 
         try {
             await apiPerformance.request("/api/performance", { method: "POST", body: JSON.stringify(values) });
-            if (typeof App.reload === "function") {
-                await App.reload("Performance record saved successfully.");
+            if (window.App && typeof window.App.reload === "function") {
+                await window.App.reload("Performance record saved successfully.");
             } else {
                 await renderPerformancePage();
             }
         } catch (error) {
-            apiPerformance.toast(error.message, true);
+            if (apiPerformance && typeof apiPerformance.toast === "function") {
+                apiPerformance.toast(error.message, true);
+            }
         }
     });
 
-    // DELETE PERFORMANCE RECORD
+    // Delete record
     pageContent.addEventListener("click", async function (event) {
         const button = event.target.closest("[data-delete-performance]");
         if (!button) return;
@@ -552,19 +560,23 @@ function setupPerformanceEvents() {
 
         try {
             await apiPerformance.request(`/api/performance/${id}`, { method: "DELETE" });
-            if (typeof App.reload === "function") {
-                await App.reload("Performance record deleted successfully.");
+            if (window.App && typeof window.App.reload === "function") {
+                await window.App.reload("Performance record deleted successfully.");
             } else {
                 await renderPerformancePage();
             }
         } catch (error) {
-            apiPerformance.toast(error.message, true);
+            if (apiPerformance && typeof apiPerformance.toast === "function") {
+                apiPerformance.toast(error.message, true);
+            }
         }
     });
 }
 
-App.onReady(function () {
-    App.renderPage = renderPerformancePage;
-    setupPerformanceEvents();
-    renderPerformancePage();
-});
+if (window.App && typeof window.App.onReady === "function") {
+    window.App.onReady(function () {
+        window.App.renderPage = renderPerformancePage;
+        setupPerformanceEvents();
+        renderPerformancePage();
+    });
+}
