@@ -2,13 +2,19 @@
 
 const apiReports = window.AppApi;
 
-// Helper to construct backend API URLs correctly
+// Helper to construct backend API URLs correctly for Local and Vercel Production
 function getBackendUrl(path) {
-  if (window.AppApi && window.AppApi.baseURL) {
-    return `${window.AppApi.baseURL}${path}`;
+  const base = (window.AppApi && window.AppApi.API_URL) ? window.AppApi.API_URL : "/api";
+  
+  let cleanPath = path;
+  if (cleanPath.startsWith("/api")) {
+    cleanPath = cleanPath.substring(4);
   }
-  // Default Express port fallback
-  return `http://localhost:5000${path}`;
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = "/" + cleanPath;
+  }
+
+  return `${base}${cleanPath}`;
 }
 
 /* =========================================================
@@ -90,7 +96,7 @@ function openDateFilterModal(reportType, format) {
   // Handle Close
   document.getElementById("close-date-modal-btn")?.addEventListener("click", () => modal.remove());
 
-  // Handle Form Submit Download Trigger (Point to express backend on port 5000)
+  // Handle Form Submit Download Trigger
   document.getElementById("export-date-range-form")?.addEventListener("submit", (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -98,7 +104,7 @@ function openDateFilterModal(reportType, format) {
     const startDate = formData.get("startDate") || "";
     const endDate = formData.get("endDate") || "";
 
-    const path = `/api/reports/${reportType === "all" ? "" : reportType + "/"}${format}?range=${range}`;
+    const path = `/reports/${reportType === "all" ? "" : reportType + "/"}${format}?range=${range}`;
     let downloadUrl = getBackendUrl(path);
 
     if (range === "custom") {
@@ -115,7 +121,9 @@ function openDateFilterModal(reportType, format) {
    RENDER REPORTS PAGE
 ========================================================= */
 async function renderReportsPage() {
-  App.renderPage = renderReportsPage;
+  if (window.App) {
+    window.App.renderPage = renderReportsPage;
+  }
 
   const pageContent = document.getElementById("page-content");
   if (!pageContent) return;
@@ -201,8 +209,15 @@ function setupReportsEvents() {
   });
 }
 
-App.onReady(() => {
-  App.renderPage = renderReportsPage;
-  setupReportsEvents();
-  renderReportsPage();
-});
+if (window.App && typeof window.App.onReady === "function") {
+  window.App.onReady(() => {
+    window.App.renderPage = renderReportsPage;
+    setupReportsEvents();
+    renderReportsPage();
+  });
+} else {
+  document.addEventListener("DOMContentLoaded", () => {
+    setupReportsEvents();
+    renderReportsPage();
+  });
+}
