@@ -4,7 +4,7 @@
 // SERVER.JS
 // Student Performance & Career Guidance System
 // Backend: Node.js + Express.js + MySQL
-// Compatible with: Local Node Server & Vercel Serverless
+// Local Development + Vercel Serverless
 // =====================================================
 
 const path = require("path");
@@ -17,49 +17,70 @@ const cors = require("cors");
 // LOAD ENVIRONMENT VARIABLES
 // =====================================================
 
+// First try .env.local inside backend folder
 dotenv.config({
-  path: path.join(__dirname, ".env.local"),
+    path: path.join(__dirname, ".env.local")
 });
 
-if (!process.env.DATABASE_URL && !process.env.DB_HOST) {
-  dotenv.config({
-    path: path.join(__dirname, ".env"),
-  });
+// Then try .env inside backend folder
+if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
+    dotenv.config({
+        path: path.join(__dirname, ".env")
+    });
+}
+
+// Then try .env.local in project root
+if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
+    dotenv.config({
+        path: path.join(__dirname, "../.env.local")
+    });
+}
+
+// Then try .env in project root
+if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
+    dotenv.config({
+        path: path.join(__dirname, "../.env")
+    });
 }
 
 // =====================================================
 // DATABASE CONNECTION
+// backend/server.js
+// therefore config/db.js = ./config/db
 // =====================================================
 
-const db = require("./backend/config/db");
+const db = require("./config/db");
 
 // =====================================================
 // ROUTES
+// backend/server.js
+// therefore routes = ./routes
 // =====================================================
 
-const authRoutes = require("./backend/routes/authRoutes");
-const studentRoutes = require("./backend/routes/studentRoutes");
-const performanceRoutes = require("./backend/routes/performanceRoutes");
-const careerRoutes = require("./backend/routes/careerRoutes");
-const reportRoutes = require("./backend/routes/reportRoutes");
-const complaintRoutes = require("./backend/routes/complaintRoutes");
-const adminRoutes = require("./backend/routes/adminRoutes");
-const subjectRoutes = require("./backend/routes/subjectRoutes");
+const authRoutes = require("./routes/authRoutes");
+const studentRoutes = require("./routes/studentRoutes");
+const performanceRoutes = require("./routes/performanceRoutes");
+const careerRoutes = require("./routes/careerRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const complaintRoutes = require("./routes/complaintRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const subjectRoutes = require("./routes/subjectRoutes");
 
 // =====================================================
 // OPTIONAL ATTENDANCE ROUTES
 // =====================================================
 
 const attendanceRoutesPath = path.join(
-  __dirname,
-  "backend",
-  "routes",
-  "attendanceRoutes.js"
+    __dirname,
+    "routes",
+    "attendanceRoutes.js"
 );
 
-const attendanceRoutes = fs.existsSync(attendanceRoutesPath)
-  ? require("./backend/routes/attendanceRoutes")
-  : null;
+let attendanceRoutes = null;
+
+if (fs.existsSync(attendanceRoutesPath)) {
+    attendanceRoutes = require("./routes/attendanceRoutes");
+}
 
 // =====================================================
 // CREATE EXPRESS APP
@@ -74,27 +95,43 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // =====================================================
-// FRONTEND & PUBLIC PATHS
+// PUBLIC FRONTEND PATH
+//
+// backend/server.js
+// ../public = project-root/public
 // =====================================================
 
-let publicPath = path.join(__dirname, "public");
-if (!fs.existsSync(publicPath)) {
-  publicPath = path.join(__dirname, "../public");
-}
+const publicPath = path.join(__dirname, "../public");
 
-let frontendPath = publicPath;
+console.log("==============================================");
+console.log("Student Performance & Career Guidance System");
+console.log("==============================================");
+console.log("Backend directory:", __dirname);
+console.log("Public directory:", publicPath);
+console.log("Public exists:", fs.existsSync(publicPath));
+console.log("Vercel:", process.env.VERCEL || "false");
 
 // =====================================================
-// CORS CONFIGURATION
+// CORS
 // =====================================================
 
 app.use(
-  cors({
-    origin: true,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
+    cors({
+        origin: true,
+        credentials: true,
+        methods: [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS"
+        ],
+        allowedHeaders: [
+            "Content-Type",
+            "Authorization"
+        ]
+    })
 );
 
 // =====================================================
@@ -109,142 +146,395 @@ app.use(express.urlencoded({ extended: true }));
 // =====================================================
 
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
-  next();
+
+    console.log(
+        `${new Date().toISOString()} - ${req.method} ${req.originalUrl}`
+    );
+
+    next();
 });
 
 // =====================================================
-// SERVE FRONTEND STATIC FILES
+// SERVE FRONTEND
 // =====================================================
 
 if (fs.existsSync(publicPath)) {
-  app.use(express.static(publicPath));
+
+    app.use(express.static(publicPath));
+
+    console.log("✅ Public folder loaded successfully");
+
+} else {
+
+    console.warn(
+        "⚠️ Public folder not found:",
+        publicPath
+    );
 }
 
 // =====================================================
-// API BASE ENDPOINTS
+// API BASE TEST
+// GET /api
 // =====================================================
 
 app.get("/api", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Express MySQL API is running on Vercel Serverless",
-    status: "OK",
-  });
+
+    res.status(200).json({
+        success: true,
+        message: "Express MySQL API is running on Vercel Serverless",
+        status: "OK"
+    });
+
 });
+
+// =====================================================
+// API BASE TEST WITH TRAILING SLASH
+// GET /api/
+// =====================================================
 
 app.get("/api/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Student Performance & Career Guidance API is running",
-    backend: "Node.js + Express.js",
-    database: "MySQL",
-  });
+
+    res.status(200).json({
+        success: true,
+        message: "Student Performance & Career Guidance API is running",
+        backend: "Node.js + Express.js",
+        database: "MySQL"
+    });
+
 });
 
 // =====================================================
-// MOUNT API ROUTES
+// AUTH ROUTES
+//
+// POST /api/auth/register
+// POST /api/auth/login
+// POST /api/auth/admin-login
 // =====================================================
 
-app.use("/api/auth", authRoutes);
-app.use("/api/students", studentRoutes);
-app.use("/api/admin/students", studentRoutes);
-app.use("/api/performance", performanceRoutes);
-app.use("/api/careers", careerRoutes);
-app.use("/api/career", careerRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/complaints", complaintRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/subjects", subjectRoutes);
+app.use(
+    "/api/auth",
+    authRoutes
+);
+
+// =====================================================
+// STUDENT ROUTES
+// =====================================================
+
+app.use(
+    "/api/students",
+    studentRoutes
+);
+
+// =====================================================
+// ADMIN STUDENT ROUTES
+// =====================================================
+
+app.use(
+    "/api/admin/students",
+    studentRoutes
+);
+
+// =====================================================
+// PERFORMANCE ROUTES
+// =====================================================
+
+app.use(
+    "/api/performance",
+    performanceRoutes
+);
+
+// =====================================================
+// CAREER ROUTES
+// =====================================================
+
+app.use(
+    "/api/careers",
+    careerRoutes
+);
+
+app.use(
+    "/api/career",
+    careerRoutes
+);
+
+// =====================================================
+// REPORT ROUTES
+// =====================================================
+
+app.use(
+    "/api/reports",
+    reportRoutes
+);
+
+// =====================================================
+// COMPLAINT ROUTES
+// =====================================================
+
+app.use(
+    "/api/complaints",
+    complaintRoutes
+);
+
+// =====================================================
+// ADMIN ROUTES
+// =====================================================
+
+app.use(
+    "/api/admin",
+    adminRoutes
+);
+
+// =====================================================
+// SUBJECT ROUTES
+// =====================================================
+
+app.use(
+    "/api/subjects",
+    subjectRoutes
+);
 
 // =====================================================
 // ATTENDANCE ROUTES
 // =====================================================
 
 if (attendanceRoutes) {
-  app.use("/api/attendance", attendanceRoutes);
+
+    app.use(
+        "/api/attendance",
+        attendanceRoutes
+    );
+
 } else {
-  app.get("/api/attendance", (req, res) => {
-    res.status(200).json({
-      success: true,
-      attendance: [],
-    });
-  });
 
-  app.post("/api/attendance", (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: "Attendance saved",
-    });
-  });
+    // GET ATTENDANCE
+    app.get("/api/attendance", (req, res) => {
 
-  app.delete("/api/attendance/:id", (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: "Attendance deleted",
+        res.status(200).json({
+            success: true,
+            attendance: []
+        });
+
     });
-  });
+
+    // ADD ATTENDANCE
+    app.post("/api/attendance", (req, res) => {
+
+        res.status(200).json({
+            success: true,
+            message: "Attendance saved"
+        });
+
+    });
+
+    // DELETE ATTENDANCE
+    app.delete("/api/attendance/:id", (req, res) => {
+
+        res.status(200).json({
+            success: true,
+            message: "Attendance deleted"
+        });
+
+    });
+
 }
 
 // =====================================================
-// API TEST ROUTE ENDPOINTS
+// ADMIN API TEST
+// GET /api/admin-test
 // =====================================================
 
 app.get("/api/admin-test", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Admin API test route is working",
-  });
-});
 
-app.get("/api/subjects-test", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Subjects API route is working",
-  });
+    res.status(200).json({
+        success: true,
+        message: "Admin API test route is working"
+    });
+
 });
 
 // =====================================================
-// FRONTEND PAGE ROUTES
+// SUBJECT API TEST
+// GET /api/subjects-test
+// =====================================================
+
+app.get("/api/subjects-test", (req, res) => {
+
+    res.status(200).json({
+        success: true,
+        message: "Subjects API route is working"
+    });
+
+});
+
+// =====================================================
+// DATABASE TEST
+// GET /api/db-test
+// =====================================================
+
+app.get("/api/db-test", async (req, res) => {
+
+    try {
+
+        if (!db || typeof db.getConnection !== "function") {
+
+            return res.status(500).json({
+                success: false,
+                message: "Database connection module is not configured correctly"
+            });
+
+        }
+
+        const connection = await db.getConnection();
+
+        await connection.query("SELECT 1");
+
+        connection.release();
+
+        return res.status(200).json({
+            success: true,
+            message: "MySQL database connection is working"
+        });
+
+    } catch (error) {
+
+        console.error(
+            "❌ Database test failed:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "MySQL database connection failed",
+            error: process.env.NODE_ENV === "development"
+                ? error.message
+                : undefined
+        });
+
+    }
+
+});
+
+// =====================================================
+// FRONTEND PAGE
+// GET /admin-subjects.html
 // =====================================================
 
 app.get("/admin-subjects.html", (req, res) => {
-  const filePath = path.join(publicPath, "admin-subjects.html");
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send("admin-subjects.html not found");
-  }
-  res.sendFile(filePath);
-});
 
-app.get("/", (req, res) => {
-  const loginFilePath = path.join(publicPath, "login.html");
-  const indexFilePath = path.join(publicPath, "index.html");
+    const filePath = path.join(
+        publicPath,
+        "admin-subjects.html"
+    );
 
-  if (fs.existsSync(loginFilePath)) {
-    return res.sendFile(loginFilePath);
-  } else if (fs.existsSync(indexFilePath)) {
-    return res.sendFile(indexFilePath);
-  }
+    if (!fs.existsSync(filePath)) {
 
-  res.status(200).json({
-    success: true,
-    message: "Web Service is active. Access API via /api or open /login.html.",
-  });
+        return res.status(404).send(
+            "admin-subjects.html not found"
+        );
+
+    }
+
+    res.sendFile(filePath);
+
 });
 
 // =====================================================
-// FRONTEND TEST ENDPOINT
+// FRONTEND ROOT
+// GET /
+// =====================================================
+
+app.get("/", (req, res) => {
+
+    const loginFilePath = path.join(
+        publicPath,
+        "login.html"
+    );
+
+    const indexFilePath = path.join(
+        publicPath,
+        "index.html"
+    );
+
+    if (fs.existsSync(loginFilePath)) {
+
+        return res.sendFile(loginFilePath);
+
+    }
+
+    if (fs.existsSync(indexFilePath)) {
+
+        return res.sendFile(indexFilePath);
+
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: "Web Service is active",
+        api: "/api"
+    });
+
+});
+
+// =====================================================
+// FRONTEND TEST
+// GET /frontend-test
 // =====================================================
 
 app.get("/frontend-test", (req, res) => {
-  res.status(200).json({
-    success: true,
-    publicPath,
-    publicExists: fs.existsSync(publicPath),
-    adminSubjectsHTML: fs.existsSync(path.join(publicPath, "admin-subjects.html")),
-    adminSubjectsJS: fs.existsSync(path.join(publicPath, "js", "admin-subjects.js")),
-    apiJS: fs.existsSync(path.join(publicPath, "js", "api.js")),
-  });
+
+    res.status(200).json({
+
+        success: true,
+
+        publicPath: publicPath,
+
+        publicExists:
+            fs.existsSync(publicPath),
+
+        loginHTML:
+            fs.existsSync(
+                path.join(
+                    publicPath,
+                    "login.html"
+                )
+            ),
+
+        indexHTML:
+            fs.existsSync(
+                path.join(
+                    publicPath,
+                    "index.html"
+                )
+            ),
+
+        adminSubjectsHTML:
+            fs.existsSync(
+                path.join(
+                    publicPath,
+                    "admin-subjects.html"
+                )
+            ),
+
+        adminSubjectsJS:
+            fs.existsSync(
+                path.join(
+                    publicPath,
+                    "js",
+                    "admin-subjects.js"
+                )
+            ),
+
+        apiJS:
+            fs.existsSync(
+                path.join(
+                    publicPath,
+                    "js",
+                    "api.js"
+                )
+            )
+
+    });
+
 });
 
 // =====================================================
@@ -252,14 +542,26 @@ app.get("/frontend-test", (req, res) => {
 // =====================================================
 
 app.use((req, res, next) => {
-  if (req.originalUrl.startsWith("/api/")) {
-    return res.status(404).json({
-      success: false,
-      message: "API route not found",
-      path: req.originalUrl,
-    });
-  }
-  next();
+
+    if (
+        req.originalUrl === "/api" ||
+        req.originalUrl.startsWith("/api/")
+    ) {
+
+        return res.status(404).json({
+
+            success: false,
+
+            message: "API route not found",
+
+            path: req.originalUrl
+
+        });
+
+    }
+
+    next();
+
 });
 
 // =====================================================
@@ -267,7 +569,11 @@ app.use((req, res, next) => {
 // =====================================================
 
 app.use((req, res) => {
-  res.status(404).send("Page not found");
+
+    res.status(404).send(
+        "Page not found"
+    );
+
 });
 
 // =====================================================
@@ -275,41 +581,99 @@ app.use((req, res) => {
 // =====================================================
 
 app.use((err, req, res, next) => {
-  console.error("❌ SERVER ERROR:", err);
 
-  if (req.originalUrl.startsWith("/api/")) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: process.env.NODE_ENV === "development" ? err.message : undefined,
-    });
-  }
+    console.error(
+        "❌ SERVER ERROR:",
+        err
+    );
 
-  res.status(500).send("Internal server error");
+    if (
+        req.originalUrl === "/api" ||
+        req.originalUrl.startsWith("/api/")
+    ) {
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: "Internal server error",
+
+            error:
+                process.env.NODE_ENV === "development"
+                    ? err.message
+                    : undefined
+
+        });
+
+    }
+
+    res.status(500).send(
+        "Internal server error"
+    );
+
 });
 
 // =====================================================
-// LOCAL RUNNER vs VERCEL SERVERLESS EXPORT
+// LOCAL SERVER
+//
+// IMPORTANT:
+// Vercel does NOT call app.listen().
+// Locally, backend/server.js can be started normally.
 // =====================================================
 
-// Only start Express listener if executing locally directly (not inside Vercel)
-if (process.env.VERCEL !== "1" && process.env.NODE_ENV !== "production") {
-  (async () => {
-    try {
-      if (db && typeof db.getConnection === "function") {
-        const connection = await db.getConnection();
-        console.log("✅ MYSQL DATABASE CONNECTED");
-        connection.release();
-      }
+if (require.main === module) {
 
-      app.listen(PORT, "0.0.0.0", () => {
-        console.log(`🚀 Local server listening on http://localhost:${PORT}`);
-      });
-    } catch (error) {
-      console.error("❌ Local server startup failed:", error);
-    }
-  })();
+    (async () => {
+
+        try {
+
+            if (
+                db &&
+                typeof db.getConnection === "function"
+            ) {
+
+                const connection =
+                    await db.getConnection();
+
+                console.log(
+                    "✅ MYSQL DATABASE CONNECTED"
+                );
+
+                connection.release();
+
+            }
+
+            app.listen(
+                PORT,
+                "0.0.0.0",
+                () => {
+
+                    console.log(
+                        `🚀 Local server running at http://localhost:${PORT}`
+                    );
+
+                    console.log(
+                        `🔗 API: http://localhost:${PORT}/api`
+                    );
+
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "❌ Local server startup failed:",
+                error
+            );
+
+        }
+
+    })();
+
 }
 
-// Export the app for Vercel Serverless Function entry point
+// =====================================================
+// VERCEL EXPORT
+// =====================================================
+
 module.exports = app;
