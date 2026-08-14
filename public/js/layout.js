@@ -3,7 +3,7 @@
 (function () {
 
     // =====================================================
-    // API
+    // API & CONFIGURATION
     // =====================================================
 
     const api = window.AppApi;
@@ -18,7 +18,7 @@
 
 
     // =====================================================
-    // NAVIGATION
+    // NAVIGATION LINKS
     // =====================================================
 
     const adminLinks = [
@@ -32,7 +32,6 @@
         ["reports", "Reports", "▤", "/reports.html"]
     ];
 
-
     const studentLinks = [
         ["student-dashboard", "Dashboard", "⌂", "/student-dashboard.html"],
         ["profile", "My Profile", "◉", "/profile.html"],
@@ -45,7 +44,7 @@
 
 
     // =====================================================
-    // HELPERS
+    // HELPER FUNCTIONS
     // =====================================================
 
     function getUser() {
@@ -62,7 +61,6 @@
         }
     }
 
-
     function escapeHtml(value) {
         if (api && typeof api.escape === "function") {
             return api.escape(String(value ?? ""));
@@ -75,14 +73,12 @@
             .replace(/'/g, "&#039;");
     }
 
-
     function getActivePage() {
         if (page === "admin-dashboard" || page === "student-dashboard") {
             return "dashboard";
         }
         return page;
     }
-
 
     function calculatePercentage(obtained, total) {
         const obtainedNumber = Number(obtained || 0);
@@ -93,7 +89,6 @@
         return Math.round((obtainedNumber / totalNumber) * 100 * 100) / 100;
     }
 
-
     function getGrade(value) {
         const percentage = Number(value || 0);
         if (percentage >= 90) return "A+";
@@ -103,7 +98,6 @@
         if (percentage >= 40) return "C";
         return "F";
     }
-
 
     function getPerformanceLevel(value) {
         const percentage = Number(value || 0);
@@ -116,12 +110,11 @@
 
 
     // =====================================================
-    // LOAD GLOBAL SYSTEM SUBJECTS
+    // DATA LOADERS
     // =====================================================
 
     async function loadAllSubjects() {
         try {
-            console.log("API REQUEST: GET /api/subjects");
             const response = await api.request("/api/subjects");
             const list = response?.subjects || response?.data || (Array.isArray(response) ? response : []);
             return Array.isArray(list) ? list : [];
@@ -131,14 +124,8 @@
         }
     }
 
-
-    // =====================================================
-    // LOAD STUDENT PROFILE
-    // =====================================================
-
     async function loadStudentProfile() {
         try {
-            console.log("API REQUEST: GET /api/students/profile");
             const response = await api.request("/api/students/profile");
             return response?.data || response?.student || response?.profile || response || null;
         } catch (error) {
@@ -147,18 +134,12 @@
         }
     }
 
-
-    // =====================================================
-    // LOAD PERFORMANCE
-    // =====================================================
-
     async function loadStudentPerformance(studentId) {
         try {
             let endpoint = "/api/performance";
             if (studentId) {
                 endpoint += "?studentId=" + encodeURIComponent(studentId);
             }
-            console.log("API REQUEST: GET", endpoint);
             const response = await api.request(endpoint);
             return response?.performance || response?.data || (Array.isArray(response) ? response : []);
         } catch (error) {
@@ -166,11 +147,6 @@
             return [];
         }
     }
-
-
-    // =====================================================
-    // LOAD ANALYTICS
-    // =====================================================
 
     async function loadAnalytics(studentId) {
         if (!studentId) return null;
@@ -185,7 +161,7 @@
 
 
     // =====================================================
-    // BUILD SUBJECTS
+    // BUILDERS
     // =====================================================
 
     function buildSubjects(performanceRows) {
@@ -213,11 +189,6 @@
         });
     }
 
-
-    // =====================================================
-    // BUILD PERFORMANCE SUMMARY
-    // =====================================================
-
     function buildPerformanceSummary(subjects) {
         if (!Array.isArray(subjects)) subjects = [];
 
@@ -236,11 +207,6 @@
         };
     }
 
-
-    // =====================================================
-    // BUILD ATTENDANCE
-    // =====================================================
-
     function buildAttendance(subjects) {
         if (!Array.isArray(subjects)) subjects = [];
 
@@ -258,7 +224,6 @@
         };
     }
 
-
     function buildAttendanceRows(subjects) {
         if (!Array.isArray(subjects)) return [];
         return subjects.map((item) => ({
@@ -268,11 +233,6 @@
             status: Number(item.attendance || 0) >= 75 ? "present" : "absent"
         }));
     }
-
-
-    // =====================================================
-    // BUILD STUDENT
-    // =====================================================
 
     function buildStudent(baseStudent, profile, performanceRows, analytics) {
         const base = baseStudent || {};
@@ -304,7 +264,7 @@
             phone: profileData.phone || base.phone || "",
             mobile: profileData.phone || base.phone || "",
             course: profileData.course || base.course || "",
-            department: profileData.course || base.course || "Not specified",
+            department: profileData.department || profileData.course || base.department || base.course || "General",
             semester: Number(profileData.semester || base.semester || 1),
             role: profileData.role || base.role || "student",
             gender: profileData.gender || "",
@@ -324,7 +284,7 @@
 
 
     // =====================================================
-    // LOAD STUDENT SUMMARY & ADMIN STUDENTS
+    // CORE APP DATA INITIALIZER
     // =====================================================
 
     async function loadStudentSummary(studentId) {
@@ -336,7 +296,6 @@
         return buildStudent(baseStudent, profile, performanceRows, analytics);
     }
 
-
     async function loadAdminStudents() {
         try {
             console.log("API REQUEST: GET /api/admin/students");
@@ -345,36 +304,46 @@
 
             if (!Array.isArray(students)) students = [];
 
-            // Execute student queries safely with fallback resolution
-            const results = await Promise.allSettled(
-                students.map(async (item) => {
-                    const [performanceRows, analytics] = await Promise.allSettled([
-                        loadStudentPerformance(item.id),
-                        loadAnalytics(item.id)
-                    ]);
+            // Directly build lightweight objects to prevent hammering the DB connection pool
+            return students.map((item) => {
+                const subjects = buildSubjects(item.performance || item.subjects || []);
+                const calculatedPerf = buildPerformanceSummary(subjects);
+                const calculatedAtt = buildAttendance(subjects);
 
-                    const perf = performanceRows.status === "fulfilled" ? performanceRows.value : [];
-                    const anal = analytics.status === "fulfilled" ? analytics.value : null;
+                const itemPerf = item.performance_summary || {};
+                const percentage = itemPerf.percentage !== undefined ? Number(itemPerf.percentage) : calculatedPerf.percentage;
 
-                    return buildStudent(item, item, perf, anal);
-                })
-            );
-
-            return results.map((res, index) => {
-                if (res.status === "fulfilled") return res.value;
-                const fallbackItem = students[index] || {};
-                return buildStudent(fallbackItem, fallbackItem, [], null);
+                return {
+                    id: Number(item.id || 0),
+                    studentCode: item.studentCode || `STU-${String(item.id || 0).padStart(4, "0")}`,
+                    name: item.name || "Student",
+                    email: item.email || "",
+                    phone: item.phone || "",
+                    mobile: item.phone || "",
+                    course: item.course || item.department || "General",
+                    department: item.department || item.course || "General",
+                    semester: Number(item.semester || 1),
+                    role: item.role || "student",
+                    subjects: subjects,
+                    performance: {
+                        totalMarks: itemPerf.totalMarks || calculatedPerf.totalMarks,
+                        obtainedMarks: itemPerf.obtainedMarks || calculatedPerf.obtainedMarks,
+                        percentage: percentage,
+                        average: itemPerf.average || calculatedPerf.average,
+                        level: getPerformanceLevel(percentage),
+                        grade: itemPerf.grade || getGrade(percentage)
+                    },
+                    attendance: calculatedAtt,
+                    attendanceRows: buildAttendanceRows(subjects),
+                    guidance: null,
+                    recommendations: []
+                };
             });
         } catch (error) {
             console.error("Admin students API error:", error);
             return [];
         }
     }
-
-
-    // =====================================================
-    // CREATE APPLICATION DATA
-    // =====================================================
 
     async function createApplicationData() {
         const user = getUser();
@@ -412,7 +381,7 @@
             };
         }
 
-        // ADMIN
+        // ADMIN FLOW
         const students = await loadAdminStudents();
 
         return {
@@ -429,7 +398,7 @@
 
 
     // =====================================================
-    // APPLICATION OBJECT & SHELL CREATION
+    // APPLICATION OBJECT & GLOBAL API
     // =====================================================
 
     window.App = {
@@ -509,6 +478,10 @@
     };
 
 
+    // =====================================================
+    // SHELL LAYOUT GENERATOR
+    // =====================================================
+
     function createShell() {
         const app = window.App;
         if (!app || !app.session) return;
@@ -585,7 +558,7 @@
 
 
     // =====================================================
-    // INITIALIZE APPLICATION
+    // INITIALIZATION
     // =====================================================
 
     async function init() {
