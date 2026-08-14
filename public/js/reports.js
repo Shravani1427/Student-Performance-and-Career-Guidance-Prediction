@@ -1,223 +1,237 @@
 "use strict";
 
-const apiReports = window.AppApi;
+const express = require("express");
+const router = express.Router();
+const db = require("../config/db");
 
-// Helper to construct backend API URLs correctly for Local and Vercel Production
-function getBackendUrl(path) {
-  const base = (window.AppApi && window.AppApi.API_URL) ? window.AppApi.API_URL : "/api";
-  
-  let cleanPath = path;
-  if (cleanPath.startsWith("/api")) {
-    cleanPath = cleanPath.substring(4);
-  }
-  if (!cleanPath.startsWith("/")) {
-    cleanPath = "/" + cleanPath;
-  }
+// Calculate Start Date Based on Range String
+function getStartDateForRange(range, customStart) {
+  if (range === "custom" && customStart) return customStart;
 
-  return `${base}${cleanPath}`;
+  const d = new Date();
+  if (range === "1m") d.setMonth(d.getMonth() - 1);
+  else if (range === "3m") d.setMonth(d.getMonth() - 3);
+  else if (range === "6m") d.setMonth(d.getMonth() - 6);
+  else if (range === "1y") d.setFullYear(d.getFullYear() - 1);
+  else d.setMonth(d.getMonth() - 1); // Default 1m
+
+  return d.toISOString().slice(0, 10);
 }
 
-/* =========================================================
-   DATE RANGE MODAL POPUP
-========================================================= */
-function openDateFilterModal(reportType, format) {
-  document.getElementById("report-date-modal")?.remove();
+// Convert Array to CSV / Excel compatible format
+function convertToCSV(data) {
+  if (!Array.isArray(data) || data.length === 0) return "No records found\n";
+  const headers = Object.keys(data[0]);
+  const csvRows = [headers.join(",")];
 
-  const modal = document.createElement("div");
-  modal.className = "modal";
-  modal.id = "report-date-modal";
+  for (const row of data) {
+    const values = headers.map((header) => {
+      const escaped = String(row[header] ?? "").replace(/"/g, '""');
+      return `"${escaped}"`;
+    });
+    csvRows.push(values.join(","));
+  }
+  return csvRows.join("\n");
+}
 
-  const titles = {
-    all: "Complete College Report",
-    students: "Student Profiles Report",
-    attendance: "Daily Attendance Report",
-    performance: "Performance Report"
-  };
+function sendCSVResponse(res, filename, rows) {
+  const csvData = convertToCSV(rows);
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}.csv"`);
+  return res.status(200).send(csvData);
+}
 
-  modal.innerHTML = `
-    <div class="modal-card" style="max-width: 440px;">
-      <button class="close-modal" id="close-date-modal-btn" type="button">×</button>
-      
-      <span class="eyebrow">EXPORT CENTER</span>
-      <h2>${titles[reportType] || "Export Report"}</h2>
-      <p style="margin-bottom: 16px; color: #64748b; font-size: 13px;">
-        Select the timeframe for this <b>${format.toUpperCase()}</b> download:
-      </p>
+function sendPDFResponse(res, title, rows) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    rows = [{ Status: "No records found for the selected period." }];
+  }
+  const headers = Object.keys(rows[0]);
 
-      <form id="export-date-range-form" style="display: flex; flex-direction: column; gap: 14px;">
-        <label>
-          <span style="font-size: 13px; font-weight: 600; color: #334155;">Select Time Range</span>
-          <select id="timeframe-select" name="range" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: inherit;">
-            <option value="1m">Last 1 Month</option>
-            <option value="3m">Last 3 Months</option>
-            <option value="6m">Last 6 Months</option>
-            <option value="1y">Last 1 Year</option>
-            <option value="custom">Custom Date Range...</option>
-          </select>
-        </label>
-
-        <!-- CUSTOM DATE RANGE INPUTS -->
-        <div id="custom-date-container" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <label>
-            <span style="font-size: 12px; color: #475569;">From Date</span>
-            <input type="date" name="startDate" id="start-date-input" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
-          </label>
-          <label>
-            <span style="font-size: 12px; color: #475569;">To Date</span>
-            <input type="date" name="endDate" id="end-date-input" value="${new Date().toISOString().slice(0, 10)}" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
-          </label>
-        </div>
-
-        <button class="button pink form-submit" type="submit" style="margin-top: 8px; padding: 12px; font-size: 14px;">
-          📥 Download ${format.toUpperCase()}
-        </button>
-      </form>
-    </div>
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>${title}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 30px; color: #1e293b; }
+        h1 { color: #ff2a75; margin-bottom: 5px; }
+        p { color: #64748b; font-size: 14px; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; font-size: 13px; }
+        th { background-color: #f8fafc; font-weight: bold; color: #0f172a; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+      </style>
+    </head>
+    <body onload="window.print()">
+      <h1>${title}</h1>
+      <p>Generated on ${new Date().toLocaleDateString()}</p>
+      <table>
+        <thead>
+          <tr>${headers.map((h) => `<th>${h.toUpperCase()}</th>`).join("")}</tr>
+        </thead>
+        <tbody>
+          ${rows.map((row) => `<tr>${headers.map((h) => `<td>${row[h] ?? "—"}</td>`).join("")}</tr>`).join("")}
+        </tbody>
+      </table>
+    </body>
+    </html>
   `;
-
-  document.body.appendChild(modal);
-
-  // Toggle custom dates
-  document.getElementById("timeframe-select")?.addEventListener("change", (e) => {
-    const customWrap = document.getElementById("custom-date-container");
-    if (customWrap) {
-      if (e.target.value === "custom") {
-        customWrap.style.display = "grid";
-        document.getElementById("start-date-input").required = true;
-        document.getElementById("end-date-input").required = true;
-      } else {
-        customWrap.style.display = "none";
-        document.getElementById("start-date-input").required = false;
-        document.getElementById("end-date-input").required = false;
-      }
-    }
-  });
-
-  // Handle Close
-  document.getElementById("close-date-modal-btn")?.addEventListener("click", () => modal.remove());
-
-  // Handle Form Submit Download Trigger
-  document.getElementById("export-date-range-form")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const range = formData.get("range");
-    const startDate = formData.get("startDate") || "";
-    const endDate = formData.get("endDate") || "";
-
-    const path = `/reports/${reportType === "all" ? "" : reportType + "/"}${format}?range=${range}`;
-    let downloadUrl = getBackendUrl(path);
-
-    if (range === "custom") {
-      downloadUrl += `&startDate=${startDate}&endDate=${endDate}`;
-    }
-
-    console.log("📥 Downloading report from:", downloadUrl);
-    window.open(downloadUrl, "_blank");
-    modal.remove();
-  });
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  return res.status(200).send(html);
 }
 
-/* =========================================================
-   RENDER REPORTS PAGE
-========================================================= */
-async function renderReportsPage() {
-  if (window.App) {
-    window.App.renderPage = renderReportsPage;
+// ---------------------------------------------------------
+// 1. ALL STUDENTS REPORT
+// ---------------------------------------------------------
+router.get("/students/excel", async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, 'General') AS Department FROM students ORDER BY id DESC"
+    );
+    return sendCSVResponse(res, "All_Students_Report", rows);
+  } catch (err) {
+    console.error("❌ Error fetching students for Excel report:", err.message);
+    return res.status(500).send("Database Error: " + err.message);
   }
+});
 
-  const pageContent = document.getElementById("page-content");
-  if (!pageContent) return;
+router.get("/students/pdf", async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT id AS ID, name AS Name, email AS Email, COALESCE(department, 'General') AS Department FROM students ORDER BY id DESC"
+    );
+    return sendPDFResponse(res, "All Student Profiles Directory", rows);
+  } catch (err) {
+    console.error("❌ Error fetching students for PDF report:", err.message);
+    return res.status(500).send("Database Error: " + err.message);
+  }
+});
 
-  pageContent.innerHTML = `
-    <div class="page-title">
-      <div>
-        <span class="eyebrow">EXPORT CENTER</span>
-        <h1>Reports & Analytics</h1>
-        <p>Download clean reports for meetings, reviews, and academic documentation.</p>
-      </div>
-      <span class="pill good">Admin Only</span>
-    </div>
+// ---------------------------------------------------------
+// 2. ATTENDANCE REPORT
+// ---------------------------------------------------------
+router.get("/attendance/excel", async (req, res) => {
+  const { range, startDate, endDate } = req.query;
+  const fromDate = getStartDateForRange(range, startDate);
+  const toDate = endDate || new Date().toISOString().slice(0, 10);
 
-    <!-- COMPLETE COLLEGE REPORT HEADER BANNER -->
-    <section class="panel" style="background: linear-gradient(135deg, #3b82f6, #ec4899); border-radius: 16px; padding: 28px; color: #fff; margin-bottom: 24px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-        <div>
-          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; opacity: 0.9;">COMPLETE COLLEGE REPORT</span>
-          <h2 style="margin: 4px 0; font-size: 24px; color: #fff;">Everything in one place</h2>
-          <p style="margin: 0; opacity: 0.9; font-size: 13px;">Export the latest student, attendance, and performance data.</p>
-        </div>
-        <div style="display: flex; gap: 10px;">
-          <button class="button white" data-export-type="all" data-export-format="excel" style="background: #fff; color: #2563eb; font-weight: 700; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer;">
-            Download Excel
-          </button>
-          <button class="button white" data-export-type="all" data-export-format="pdf" style="background: #fff; color: #ec4899; font-weight: 700; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer;">
-            Download PDF
-          </button>
-        </div>
-      </div>
-    </section>
+  try {
+    const [rows] = await db.query(
+      `SELECT 
+        s.id AS Student_ID, 
+        s.name AS Student_Name, 
+        COALESCE(s.department, 'General') AS Department,
+        COUNT(CASE WHEN a.status = 'P' THEN 1 END) AS Total_Present,
+        COUNT(CASE WHEN a.status = 'A' THEN 1 END) AS Total_Absent,
+        COUNT(CASE WHEN a.status = 'HD' THEN 1 END) AS Total_Half_Day,
+        COUNT(CASE WHEN a.status = 'L' THEN 1 END) AS Total_Leave
+       FROM students s 
+       LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
+       GROUP BY s.id, s.name, s.department
+       ORDER BY s.id DESC`,
+      [fromDate, toDate]
+    );
+    return sendCSVResponse(res, `Attendance_Report_${range || "all"}`, rows);
+  } catch (err) {
+    console.error("❌ Error fetching attendance for Excel:", err.message);
+    return res.status(500).send("Database Error: " + err.message);
+  }
+});
 
-    <!-- 3 SUB-MODULE CARDS -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
-      
-      <!-- STUDENT REPORT -->
-      <section class="panel" style="background: #fff; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
-        <div style="font-size: 20px; margin-bottom: 8px;">👤</div>
-        <h3 style="margin: 0 0 4px 0; font-size: 16px; color: #0f172a;">Student Report</h3>
-        <p style="margin: 0 0 16px 0; font-size: 12px; color: #64748b;">Profiles, departments and contact details.</p>
-        <div style="display: flex; gap: 12px; font-size: 13px; font-weight: 600;">
-          <a href="#" data-export-type="students" data-export-format="excel" style="color: #2563eb; text-decoration: none;">Excel →</a>
-          <a href="#" data-export-type="students" data-export-format="pdf" style="color: #ec4899; text-decoration: none;">PDF</a>
-        </div>
-      </section>
+router.get("/attendance/pdf", async (req, res) => {
+  const { range, startDate, endDate } = req.query;
+  const fromDate = getStartDateForRange(range, startDate);
+  const toDate = endDate || new Date().toISOString().slice(0, 10);
 
-      <!-- ATTENDANCE REPORT -->
-      <section class="panel" style="background: #fff; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
-        <div style="font-size: 20px; margin-bottom: 8px;">⏱️</div>
-        <h3 style="margin: 0 0 4px 0; font-size: 16px; color: #0f172a;">Attendance Report</h3>
-        <p style="margin: 0 0 16px 0; font-size: 12px; color: #64748b;">Present, absent and percentage summaries.</p>
-        <div style="display: flex; gap: 12px; font-size: 13px; font-weight: 600;">
-          <a href="#" data-export-type="attendance" data-export-format="excel" style="color: #2563eb; text-decoration: none;">Excel →</a>
-          <a href="#" data-export-type="attendance" data-export-format="pdf" style="color: #ec4899; text-decoration: none;">PDF</a>
-        </div>
-      </section>
+  try {
+    const [rows] = await db.query(
+      `SELECT 
+        s.id AS Student_ID, 
+        s.name AS Student_Name, 
+        COALESCE(s.department, 'General') AS Department,
+        COUNT(CASE WHEN a.status = 'P' THEN 1 END) AS Present,
+        COUNT(CASE WHEN a.status = 'A' THEN 1 END) AS Absent,
+        COUNT(CASE WHEN a.status = 'HD' THEN 1 END) AS Half_Day,
+        COUNT(CASE WHEN a.status = 'L' THEN 1 END) AS Leave_Days
+       FROM students s 
+       LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
+       GROUP BY s.id, s.name, s.department
+       ORDER BY s.id DESC`,
+      [fromDate, toDate]
+    );
+    return sendPDFResponse(res, `Attendance Report Summary (${fromDate} to ${toDate})`, rows);
+  } catch (err) {
+    console.error("❌ Error fetching attendance for PDF:", err.message);
+    return res.status(500).send("Database Error: " + err.message);
+  }
+});
 
-      <!-- PERFORMANCE REPORT -->
-      <section class="panel" style="background: #fff; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
-        <div style="font-size: 20px; margin-bottom: 8px;">📊</div>
-        <h3 style="margin: 0 0 4px 0; font-size: 16px; color: #0f172a;">Performance Report</h3>
-        <p style="margin: 0 0 16px 0; font-size: 12px; color: #64748b;">Marks by subject and academic levels.</p>
-        <div style="display: flex; gap: 12px; font-size: 13px; font-weight: 600;">
-          <a href="#" data-export-type="performance" data-export-format="excel" style="color: #2563eb; text-decoration: none;">Excel →</a>
-          <a href="#" data-export-type="performance" data-export-format="pdf" style="color: #ec4899; text-decoration: none;">PDF</a>
-        </div>
-      </section>
+// ---------------------------------------------------------
+// 3. PERFORMANCE REPORT
+// ---------------------------------------------------------
+router.get("/performance/excel", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        s.id AS Student_ID, 
+        s.name AS Student_Name, 
+        COALESCE(s.department, 'General') AS Department,
+        COALESCE(p.subject_name, 'General Assessment') AS Subject,
+        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.max_marks, 100)) AS Marks,
+        COALESCE(p.grade, 'N/A') AS Grade
+      FROM students s
+      LEFT JOIN performance p ON s.id = p.student_id
+      ORDER BY s.id DESC
+    `);
+    return sendCSVResponse(res, "Performance_Report", rows);
+  } catch (err) {
+    console.error("❌ Error fetching performance for Excel:", err.message);
+    return res.status(500).send("Database Error: " + err.message);
+  }
+});
 
-    </div>
-  `;
-}
+router.get("/performance/pdf", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        s.id AS Student_ID, 
+        s.name AS Student_Name, 
+        COALESCE(p.subject_name, 'General Assessment') AS Subject,
+        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.max_marks, 100)) AS Marks,
+        COALESCE(p.grade, 'N/A') AS Grade
+      FROM students s
+      LEFT JOIN performance p ON s.id = p.student_id
+      ORDER BY s.id DESC
+    `);
+    return sendPDFResponse(res, "Academic Performance Report", rows);
+  } catch (err) {
+    console.error("❌ Error fetching performance for PDF:", err.message);
+    return res.status(500).send("Database Error: " + err.message);
+  }
+});
 
-function setupReportsEvents() {
-  document.addEventListener("click", function (event) {
-    const btn = event.target.closest("[data-export-type]");
-    if (btn) {
-      event.preventDefault();
-      const type = btn.dataset.exportType;
-      const format = btn.dataset.exportFormat;
-      openDateFilterModal(type, format);
-    }
-  });
-}
+// ---------------------------------------------------------
+// 4. COMPLETE COLLEGE REPORT
+// ---------------------------------------------------------
+router.get("/excel", async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT id AS ID, name AS Name, email AS Email, department AS Department FROM students ORDER BY id DESC");
+    return sendCSVResponse(res, "Complete_College_Report", rows);
+  } catch (err) {
+    console.error("❌ Error fetching complete college report for Excel:", err.message);
+    return res.status(500).send("Database Error: " + err.message);
+  }
+});
 
-if (window.App && typeof window.App.onReady === "function") {
-  window.App.onReady(() => {
-    window.App.renderPage = renderReportsPage;
-    setupReportsEvents();
-    renderReportsPage();
-  });
-} else {
-  document.addEventListener("DOMContentLoaded", () => {
-    setupReportsEvents();
-    renderReportsPage();
-  });
-}
+router.get("/pdf", async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT id AS ID, name AS Name, email AS Email, department AS Department FROM students ORDER BY id DESC");
+    return sendPDFResponse(res, "Complete College Directory Report", rows);
+  } catch (err) {
+    console.error("❌ Error fetching complete college report for PDF:", err.message);
+    return res.status(500).send("Database Error: " + err.message);
+  }
+});
+
+module.exports = router;
