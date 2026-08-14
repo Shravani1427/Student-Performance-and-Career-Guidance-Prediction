@@ -71,6 +71,9 @@ function renderReportsPage() {
 
     const metrics = calculateClassMetrics(students);
 
+    // Dynamic timestamp to bypass browser and CDN caches on download
+    const ts = Date.now();
+
     pageContent.innerHTML = `
         <div class="page-title" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
             <div>
@@ -79,10 +82,10 @@ function renderReportsPage() {
                 <p>Generate, view, and export university analytics and performance metrics.</p>
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <a href="/api/reports/excel" class="button pink" download style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                <a href="/api/reports/excel?t=${ts}" class="button pink" download style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
                     ⬇ Complete Excel
                 </a>
-                <a href="/api/reports/pdf" target="_blank" class="button" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:#4f46e5; color:#fff;">
+                <a href="/api/reports/pdf?t=${ts}" target="_blank" class="button" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:#4f46e5; color:#fff;">
                     ⎙ Complete PDF
                 </a>
             </div>
@@ -125,8 +128,8 @@ function renderReportsPage() {
                     <h3 style="margin: 0 0 6px; font-size: 16px;">Student Directory</h3>
                     <p style="margin: 0 0 14px; font-size: 13px; color: #64748b;">Profiles, email, and department data.</p>
                     <div style="display: flex; gap: 8px;">
-                        <a href="/api/reports/students/excel" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">CSV / Excel</a>
-                        <a href="/api/reports/students/pdf" target="_blank" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">PDF</a>
+                        <a href="/api/reports/students/excel?t=${ts}" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">CSV / Excel</a>
+                        <a href="/api/reports/students/pdf?t=${ts}" target="_blank" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">PDF</a>
                     </div>
                 </div>
 
@@ -135,8 +138,8 @@ function renderReportsPage() {
                     <h3 style="margin: 0 0 6px; font-size: 16px;">Attendance Summary</h3>
                     <p style="margin: 0 0 14px; font-size: 13px; color: #64748b;">Present, absent, and leave counts.</p>
                     <div style="display: flex; gap: 8px;">
-                        <a href="/api/reports/attendance/excel" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">CSV / Excel</a>
-                        <a href="/api/reports/attendance/pdf" target="_blank" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">PDF</a>
+                        <a href="/api/reports/attendance/excel?t=${ts}" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">CSV / Excel</a>
+                        <a href="/api/reports/attendance/pdf?t=${ts}" target="_blank" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">PDF</a>
                     </div>
                 </div>
 
@@ -145,8 +148,8 @@ function renderReportsPage() {
                     <h3 style="margin: 0 0 6px; font-size: 16px;">Academic Performance</h3>
                     <p style="margin: 0 0 14px; font-size: 13px; color: #64748b;">Exam marks, grades, and records.</p>
                     <div style="display: flex; gap: 8px;">
-                        <a href="/api/reports/performance/excel" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">CSV / Excel</a>
-                        <a href="/api/reports/performance/pdf" target="_blank" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">PDF</a>
+                        <a href="/api/reports/performance/excel?t=${ts}" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">CSV / Excel</a>
+                        <a href="/api/reports/performance/pdf?t=${ts}" target="_blank" class="button small" style="background:#fff; border:1px solid #cbd5e1; text-decoration:none;">PDF</a>
                     </div>
                 </div>
 
