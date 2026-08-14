@@ -124,7 +124,6 @@
             console.log("API REQUEST: GET /api/subjects");
             const response = await api.request("/api/subjects");
             const list = response?.subjects || response?.data || (Array.isArray(response) ? response : []);
-            console.log("Loaded global subjects:", list);
             return Array.isArray(list) ? list : [];
         } catch (error) {
             console.warn("Could not fetch /api/subjects:", error);
@@ -346,21 +345,23 @@
 
             if (!Array.isArray(students)) students = [];
 
-            const completeStudents = [];
-            for (const item of students) {
-                try {
-                    const performanceRows = await loadStudentPerformance(item.id);
-                    const analytics = await loadAnalytics(item.id);
-                    completeStudents.push(buildStudent(item, item, performanceRows, analytics));
-                } catch (error) {
-                    completeStudents.push(buildStudent(item, item, [], null));
-                }
-            }
-
-            return completeStudents;
+            // Load in parallel to avoid Vercel function timeouts
+            return await Promise.all(
+                students.map(async (item) => {
+                    try {
+                        const [performanceRows, analytics] = await Promise.all([
+                            loadStudentPerformance(item.id),
+                            loadAnalytics(item.id)
+                        ]);
+                        return buildStudent(item, item, performanceRows, analytics);
+                    } catch (error) {
+                        return buildStudent(item, item, [], null);
+                    }
+                })
+            );
         } catch (error) {
             console.error("Admin students API error:", error);
-            throw error; // Re-throw to trigger auth redirect handler if status is 401
+            throw error;
         }
     }
 
@@ -376,7 +377,7 @@
         if (!user || !token) {
             console.warn("No authentication token or user session found.");
             localStorage.clear();
-            window.location.href = "/index.html";
+            window.location.href = "/login.html";
             throw new Error("No logged-in user found. Redirecting to login.");
         }
 
@@ -385,7 +386,6 @@
 
         console.log("👤 Logged in user:", user);
 
-        // Fetch global subjects list
         const globalSubjects = await loadAllSubjects();
 
         if (role === "student") {
@@ -565,7 +565,7 @@
                     api.logout();
                 } else {
                     localStorage.clear();
-                    window.location.href = "/index.html";
+                    window.location.href = "/login.html";
                 }
             });
         }
@@ -591,9 +591,11 @@
             }
 
             const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
-            if (!token && window.location.pathname !== "/index.html" && window.location.pathname !== "/") {
-                console.warn("No token available on startup. Redirecting to index.html...");
-                window.location.href = "/index.html";
+            const currentPath = window.location.pathname;
+
+            if (!token && currentPath !== "/login.html" && currentPath !== "/index.html" && currentPath !== "/") {
+                console.warn("No token available on startup. Redirecting to login.html...");
+                window.location.href = "/login.html";
                 return;
             }
 
@@ -628,8 +630,8 @@
             console.error("❌ Application initialization failed:", error);
             if (error.message && error.message.includes("token")) {
                 localStorage.clear();
-                if (window.location.pathname !== "/index.html" && window.location.pathname !== "/") {
-                    window.location.href = "/index.html";
+                if (window.location.pathname !== "/login.html" && window.location.pathname !== "/" && window.location.pathname !== "/index.html") {
+                    window.location.href = "/login.html";
                 }
             }
         }

@@ -16,7 +16,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const submitButton = document.querySelector(".submit-button");
     const roleButtons = document.querySelectorAll(".role-tabs button");
 
-
     // =====================================================
     // CHECK LOGIN FORM
     // =====================================================
@@ -25,7 +24,6 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("ERROR: login-form was not found.");
         return;
     }
-
 
     // =====================================================
     // STUDENT / ADMIN ROLE BUTTONS
@@ -50,12 +48,11 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-
     // =====================================================
     // SHOW / HIDE PASSWORD
     // =====================================================
 
-    if (togglePassword) {
+    if (togglePassword && passwordInput) {
         togglePassword.addEventListener("click", function (event) {
             event.preventDefault();
 
@@ -66,7 +63,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
-
 
     // =====================================================
     // LOGIN FORM SUBMIT
@@ -80,21 +76,21 @@ document.addEventListener("DOMContentLoaded", function () {
         const selectedButton = document.querySelector(".role-tabs button.selected");
         const selectedRole = selectedButton ? selectedButton.dataset.role : "student";
 
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
+        const email = emailInput ? emailInput.value.trim() : "";
+        const password = passwordInput ? passwordInput.value : "";
 
         console.log("Selected role:", selectedRole);
         console.log("Email:", email);
 
         if (!email) {
             showError("Please enter your email address.");
-            emailInput.focus();
+            if (emailInput) emailInput.focus();
             return;
         }
 
         if (!password) {
             showError("Please enter your password.");
-            passwordInput.focus();
+            if (passwordInput) passwordInput.focus();
             return;
         }
 
@@ -109,17 +105,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         try {
-
             const endpoint = selectedRole === "admin" ? "/auth/admin-login" : "/auth/login";
-
-            console.log("Sending request via AppApi to:", endpoint);
-
-            // Use AppApi wrapper if available, fallback to direct fetch
             let result;
+
+            // Use AppApi wrapper if available, otherwise direct fetch
             if (window.AppApi && typeof window.AppApi.request === "function") {
                 result = await window.AppApi.request(endpoint, {
                     method: "POST",
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password, role: selectedRole })
                 });
             } else {
                 const response = await fetch(`/api${endpoint}`, {
@@ -128,10 +121,16 @@ document.addEventListener("DOMContentLoaded", function () {
                         "Content-Type": "application/json",
                         "Accept": "application/json"
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password, role: selectedRole })
                 });
 
-                result = await response.json();
+                // Safely parse JSON response
+                const text = await response.text();
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(`Server returned unexpected response (${response.status})`);
+                }
 
                 if (!response.ok || result.success === false) {
                     throw new Error(result.message || `Login failed with status ${response.status}`);
@@ -140,25 +139,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
             console.log("BACKEND RESPONSE:", result);
 
-            const token = result.token || result.auth_token;
+            // Extract JWT Token
+            const token = result.token || result.auth_token || result.accessToken;
 
             if (!token) {
                 console.error("Server response does not contain token:", result);
                 throw new Error("Login response did not contain an authentication token.");
             }
 
-            // Save under both storage keys for complete compatibility
+            // Save tokens to localStorage
             localStorage.setItem("auth_token", token);
             localStorage.setItem("token", token);
 
-            if (result.user) {
-                localStorage.setItem("auth_user", JSON.stringify(result.user));
-                localStorage.setItem("user", JSON.stringify(result.user));
-            }
+            // Save user profile data
+            const user = result.user || result.admin || result.student || { email, role: selectedRole };
+            localStorage.setItem("auth_user", JSON.stringify(user));
+            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("role", selectedRole);
 
             console.log("LOGIN SUCCESSFUL");
-            console.log("Logged-in user:", result.user);
+            console.log("Logged-in user:", user);
 
+            // Role-based Redirection
             if (selectedRole === "admin") {
                 window.location.href = "/admin-dashboard.html";
             } else {
@@ -166,26 +168,21 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
         } catch (error) {
-
             console.error("LOGIN ERROR:", error);
 
-            if (error instanceof TypeError) {
+            if (error instanceof TypeError && error.message.includes("fetch")) {
                 showError("Cannot connect to the backend server. Please check your network connection.");
             } else {
-                showError(error.message || "Login failed. Please try again.");
+                showError(error.message || "Login failed. Please verify your credentials and try again.");
             }
 
         } finally {
-
             if (submitButton) {
                 submitButton.disabled = false;
                 submitButton.textContent = "Login";
             }
-
         }
-
     });
-
 
     // =====================================================
     // SHOW ERROR MESSAGE

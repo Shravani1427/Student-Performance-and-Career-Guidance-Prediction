@@ -5,30 +5,31 @@
 API CONFIGURATION
 Student Performance & Career Guidance System
 Backend: Node.js + Express.js + MySQL
+Compatible with: Vercel Serverless & Local Development
 =========================================================
 */
 
-// Dynamic Port Resolution: Handles local development ports (3000, 5500) pointing to Express on 5000
+// Dynamic URL Resolution: Uses relative '/api' on Vercel/Production or localhost:5000 fallback
 const getDynamicApiUrl = () => {
     if (typeof window !== "undefined" && window.location) {
+        const hostname = window.location.hostname;
         const port = window.location.port;
-        // If frontend is running on local dev server ports, route API calls to Express on port 5000
-        if (port === "3000" || port === "5500" || port === "8080" || port === "127.0.0.1") {
+
+        // If developing locally with VS Code Live Server (port 5500/3000), direct to Express backend
+        if ((hostname === "localhost" || hostname === "127.0.0.1") && (port === "5500" || port === "3000" || port === "8080")) {
             return "http://localhost:5000/api";
         }
-        // For production or when served directly by Express
-        if (window.location.protocol.startsWith("http")) {
-            return `${window.location.origin}/api`;
-        }
+
+        // On Vercel production and standard express server, use relative path
+        return "/api";
     }
-    return "http://localhost:5000/api";
+    return "/api";
 };
 
 window.AppApi = {
 
-    // Backend URL base dynamically configured to target Express server on Port 5000
+    // Backend URL base
     API_URL: getDynamicApiUrl(),
-
 
     /*
     =====================================================
@@ -44,7 +45,7 @@ window.AppApi = {
         if (url.startsWith("http://") || url.startsWith("https://")) {
             endpoint = url;
         } else {
-            // Strip leading /api if present to avoid duplicating base path
+            // Normalize path to avoid double "/api/api"
             let cleanUrl = url;
             if (cleanUrl.startsWith("/api")) {
                 cleanUrl = cleanUrl.substring(4);
@@ -55,7 +56,6 @@ window.AppApi = {
 
             endpoint = this.API_URL + cleanUrl;
         }
-
 
         /*
         =================================================
@@ -68,7 +68,6 @@ window.AppApi = {
             "Accept": "application/json",
             ...(options.headers || {})
         };
-
 
         /*
         =================================================
@@ -84,13 +83,11 @@ window.AppApi = {
             headers.Authorization = `Bearer ${token}`;
         }
 
-
         console.log(
             "API REQUEST:",
             options.method || "GET",
             endpoint
         );
-
 
         /*
         =================================================
@@ -108,10 +105,9 @@ window.AppApi = {
         } catch (networkError) {
             console.error("NETWORK ERROR:", networkError);
             throw new Error(
-                `Unable to connect to backend server at ${this.API_URL}. Please ensure Express.js is running.`
+                `Unable to connect to backend server at ${endpoint}. Please ensure the server is active.`
             );
         }
-
 
         /*
         =================================================
@@ -127,13 +123,11 @@ window.AppApi = {
             console.warn("Server did not return JSON response.");
         }
 
-
         console.log(
             "API RESPONSE:",
             response.status,
             data
         );
-
 
         /*
         =================================================
@@ -144,7 +138,6 @@ window.AppApi = {
         if (response.status === 401) {
             console.warn("Authentication token is invalid or expired. Redirecting to login...");
             
-            // Show toast error message if element exists
             this.toast("Session expired. Please log in again.", true);
 
             // Clean up invalid tokens
@@ -153,10 +146,10 @@ window.AppApi = {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
 
-            // Avoid infinite redirect loop if already on index/login page
-            if (window.location.pathname !== "/index.html" && window.location.pathname !== "/") {
+            // Avoid infinite redirect loop if already on login/root page
+            if (window.location.pathname !== "/login.html" && window.location.pathname !== "/" && window.location.pathname !== "/index.html") {
                 setTimeout(() => {
-                    window.location.href = "/index.html";
+                    window.location.href = "/login.html";
                 }, 1500);
             }
 
@@ -169,11 +162,8 @@ window.AppApi = {
             );
         }
 
-
         return data;
-
     },
-
 
     /*
     =====================================================
@@ -197,7 +187,6 @@ window.AppApi = {
         );
     },
 
-
     /*
     =====================================================
     DATE FORMAT
@@ -210,7 +199,6 @@ window.AppApi = {
         }
         return new Date(value).toLocaleDateString();
     },
-
 
     /*
     =====================================================
@@ -238,7 +226,6 @@ window.AppApi = {
         );
     },
 
-
     /*
     =====================================================
     LOGOUT
@@ -251,11 +238,10 @@ window.AppApi = {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
 
-        window.location.href = "/index.html";
+        window.location.href = "/login.html";
     }
 
 };
-
 
 // =====================================================
 // CONFIRM API LOADED
