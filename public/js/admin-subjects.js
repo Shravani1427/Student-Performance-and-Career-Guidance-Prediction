@@ -12,7 +12,7 @@
  PUT    /api/subjects/:id
  DELETE /api/subjects/:id
 
- Works seamlessly across local Express dev server & Render production.
+ Works seamlessly across local dev server & production.
 =========================================================
 */
 
@@ -185,6 +185,7 @@
             // Scroll to Form / Add Subject Button
             const scrollAddBtn = event.target.closest("#scrollAddBtn, #addSubjectBtn");
             if (scrollAddBtn) {
+                resetForm();
                 cacheDOM();
                 const card = document.getElementById("subjectFormCard") || document.getElementById("subjectFormContainer") || form;
                 if (card) {
@@ -238,16 +239,13 @@
 
         // 2. Fallback resolution if AppApi is not present
         const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
-        const origin = window.location.origin;
-        const port = window.location.port;
+        const hostname = window.location.hostname;
+        const isLocal = hostname === "localhost" || hostname === "127.0.0.1";
 
-        let baseUrl = `${origin}/api`;
-        if (port === "3000" || port === "5500" || port === "8080" || port === "127.0.0.1") {
-            baseUrl = "http://localhost:5000/api";
-        }
+        let baseUrl = isLocal ? "http://localhost:5000/api" : `${window.location.origin}/api`;
 
         let cleanEndpoint = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
-        if (cleanEndpoint.startsWith("/api")) {
+        if (cleanEndpoint.startsWith("/api/")) {
             cleanEndpoint = cleanEndpoint.substring(4);
         }
 
@@ -403,7 +401,7 @@
             code: sCode ? sCode.value.trim().toUpperCase() : "",
             category: sCategory ? sCategory.value : "Core",
             semester: sSemester ? Number(sSemester.value) : 0,
-            department: sDepartment ? sDepartment.value.trim() : "General",
+            department: sDepartment ? sDepartment.value.trim() : "Information Technology",
             credits: sCredits ? numberValue(sCredits.value, 0) : 0,
             status: sStatus ? sStatus.value : "active",
             description: sDescription ? sDescription.value.trim() : "",
