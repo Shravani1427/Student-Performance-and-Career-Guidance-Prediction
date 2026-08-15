@@ -22,6 +22,8 @@ function getStartDateForRange(range, customStart) {
 
 function sendCSVResponse(res, filename, rows) {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="${filename}.csv"`);
 
@@ -45,10 +47,12 @@ function sendCSVResponse(res, filename, rows) {
 
 function sendPDFResponse(res, title, rows) {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   res.setHeader("Content-Type", "text/html; charset=utf-8");
 
   if (!Array.isArray(rows) || rows.length === 0) {
-    rows = [{ Message: "No records found in database" }];
+    rows = [{ Message: "No student records found in database" }];
   }
 
   const headers = Object.keys(rows[0]);
@@ -98,9 +102,18 @@ function sendPDFResponse(res, title, rows) {
 // ---------------------------------------------------------
 router.get("/students/excel", async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT CONCAT('STU-', LPAD(id, 4, '0')) AS Student_ID, name AS Name, email AS Email, department AS Department, created_at AS Registered_Date FROM students ORDER BY id DESC"
-    );
+    const [rows] = await db.query(`
+      SELECT 
+        CONCAT('STU-', LPAD(s.id, 4, '0')) AS Student_ID, 
+        s.name AS Name, 
+        s.email AS Email, 
+        COALESCE(p.course, 'Information Technology') AS Department, 
+        s.created_at AS Registered_Date 
+      FROM students s
+      LEFT JOIN profiles p ON p.student_id = s.id
+      WHERE s.role = 'student' OR s.role IS NULL
+      ORDER BY s.id DESC
+    `);
     return sendCSVResponse(res, "All_Students_Report", rows);
   } catch (error) {
     console.error("[REPORTS /students/excel ERROR]:", error);
@@ -110,9 +123,18 @@ router.get("/students/excel", async (req, res) => {
 
 router.get("/students/pdf", async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT CONCAT('STU-', LPAD(id, 4, '0')) AS Student_ID, name AS Name, email AS Email, department AS Department, created_at AS Registered_Date FROM students ORDER BY id DESC"
-    );
+    const [rows] = await db.query(`
+      SELECT 
+        CONCAT('STU-', LPAD(s.id, 4, '0')) AS Student_ID, 
+        s.name AS Name, 
+        s.email AS Email, 
+        COALESCE(p.course, 'Information Technology') AS Department,
+        s.created_at AS Registered_Date
+      FROM students s
+      LEFT JOIN profiles p ON p.student_id = s.id
+      WHERE s.role = 'student' OR s.role IS NULL
+      ORDER BY s.id DESC
+    `);
     return sendPDFResponse(res, "All Student Profiles Directory", rows);
   } catch (error) {
     console.error("[REPORTS /students/pdf ERROR]:", error);
@@ -129,22 +151,23 @@ router.get("/attendance/excel", async (req, res) => {
   const toDate = endDate || new Date().toISOString().slice(0, 10);
 
   try {
-    const [rows] = await db.query(
-      `SELECT 
+    const [rows] = await db.query(`
+      SELECT 
         CONCAT('STU-', LPAD(s.id, 4, '0')) AS Student_ID, 
         s.name AS Student_Name, 
-        COALESCE(s.department, 'General') AS Department,
+        COALESCE(p.course, 'Information Technology') AS Department,
         COUNT(CASE WHEN a.status = 'P' THEN 1 END) AS Total_Present,
         COUNT(CASE WHEN a.status = 'A' THEN 1 END) AS Total_Absent,
         COUNT(CASE WHEN a.status = 'HD' THEN 1 END) AS Total_Half_Day,
         COUNT(CASE WHEN a.status = 'L' THEN 1 END) AS Total_Leave,
         CONCAT(COALESCE(ROUND((COUNT(CASE WHEN a.status = 'P' THEN 1 END) + (COUNT(CASE WHEN a.status = 'HD' THEN 1 END) * 0.5)) / NULLIF(COUNT(a.id), 0) * 100, 2), 0), '%') AS Attendance_Percentage
-       FROM students s 
-       LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
-       GROUP BY s.id, s.name, s.department
-       ORDER BY s.id DESC`,
-      [fromDate, toDate]
-    );
+      FROM students s 
+      LEFT JOIN profiles p ON p.student_id = s.id
+      LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
+      WHERE s.role = 'student' OR s.role IS NULL
+      GROUP BY s.id, s.name, p.course
+      ORDER BY s.id DESC
+    `, [fromDate, toDate]);
     return sendCSVResponse(res, `Attendance_Report_${range || "all"}`, rows);
   } catch (error) {
     console.error("[REPORTS /attendance/excel ERROR]:", error);
@@ -158,22 +181,23 @@ router.get("/attendance/pdf", async (req, res) => {
   const toDate = endDate || new Date().toISOString().slice(0, 10);
 
   try {
-    const [rows] = await db.query(
-      `SELECT 
+    const [rows] = await db.query(`
+      SELECT 
         CONCAT('STU-', LPAD(s.id, 4, '0')) AS Student_ID, 
         s.name AS Student_Name, 
-        COALESCE(s.department, 'General') AS Department,
+        COALESCE(p.course, 'Information Technology') AS Department,
         COUNT(CASE WHEN a.status = 'P' THEN 1 END) AS Present,
         COUNT(CASE WHEN a.status = 'A' THEN 1 END) AS Absent,
         COUNT(CASE WHEN a.status = 'HD' THEN 1 END) AS Half_Day,
         COUNT(CASE WHEN a.status = 'L' THEN 1 END) AS Leave_Days,
         CONCAT(COALESCE(ROUND((COUNT(CASE WHEN a.status = 'P' THEN 1 END) + (COUNT(CASE WHEN a.status = 'HD' THEN 1 END) * 0.5)) / NULLIF(COUNT(a.id), 0) * 100, 2), 0), '%') AS Percentage
-       FROM students s 
-       LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
-       GROUP BY s.id, s.name, s.department
-       ORDER BY s.id DESC`,
-      [fromDate, toDate]
-    );
+      FROM students s 
+      LEFT JOIN profiles p ON p.student_id = s.id
+      LEFT JOIN attendance a ON s.id = a.student_id AND a.date >= ? AND a.date <= ?
+      WHERE s.role = 'student' OR s.role IS NULL
+      GROUP BY s.id, s.name, p.course
+      ORDER BY s.id DESC
+    `, [fromDate, toDate]);
     return sendPDFResponse(res, `Attendance Report Summary (${fromDate} to ${toDate})`, rows);
   } catch (error) {
     console.error("[REPORTS /attendance/pdf ERROR]:", error);
@@ -190,12 +214,14 @@ router.get("/performance/excel", async (req, res) => {
       SELECT 
         CONCAT('STU-', LPAD(s.id, 4, '0')) AS Student_ID, 
         s.name AS Student_Name, 
-        COALESCE(s.department, 'General') AS Department,
-        COALESCE(p.subject_name, 'No subjects assigned') AS Subject,
-        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.max_marks, 100)) AS Marks,
+        COALESCE(pr.course, 'Information Technology') AS Department,
+        COALESCE(p.subject_name, 'No subjects recorded') AS Subject,
+        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.total_marks, 100)) AS Marks,
         COALESCE(p.grade, 'N/A') AS Grade
       FROM students s
+      LEFT JOIN profiles pr ON pr.student_id = s.id
       LEFT JOIN performance p ON s.id = p.student_id
+      WHERE s.role = 'student' OR s.role IS NULL
       ORDER BY s.id DESC
     `);
     return sendCSVResponse(res, "Performance_Report", rows);
@@ -211,11 +237,14 @@ router.get("/performance/pdf", async (req, res) => {
       SELECT 
         CONCAT('STU-', LPAD(s.id, 4, '0')) AS Student_ID, 
         s.name AS Student_Name, 
-        COALESCE(p.subject_name, 'No subjects assigned') AS Subject,
-        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.max_marks, 100)) AS Marks,
+        COALESCE(pr.course, 'Information Technology') AS Department,
+        COALESCE(p.subject_name, 'No subjects recorded') AS Subject,
+        CONCAT(COALESCE(p.marks_obtained, 0), '/', COALESCE(p.total_marks, 100)) AS Marks,
         COALESCE(p.grade, 'N/A') AS Grade
       FROM students s
+      LEFT JOIN profiles pr ON pr.student_id = s.id
       LEFT JOIN performance p ON s.id = p.student_id
+      WHERE s.role = 'student' OR s.role IS NULL
       ORDER BY s.id DESC
     `);
     return sendPDFResponse(res, "Academic Performance Report", rows);
@@ -230,9 +259,18 @@ router.get("/performance/pdf", async (req, res) => {
 // ---------------------------------------------------------
 router.get("/excel", async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT CONCAT('STU-', LPAD(id, 4, '0')) AS Student_ID, name AS Name, email AS Email, department AS Department, created_at AS Registered_Date FROM students ORDER BY id DESC"
-    );
+    const [rows] = await db.query(`
+      SELECT 
+        CONCAT('STU-', LPAD(s.id, 4, '0')) AS Student_ID, 
+        s.name AS Name, 
+        s.email AS Email, 
+        COALESCE(p.course, 'Information Technology') AS Department, 
+        s.created_at AS Registered_Date 
+      FROM students s
+      LEFT JOIN profiles p ON p.student_id = s.id
+      WHERE s.role = 'student' OR s.role IS NULL
+      ORDER BY s.id DESC
+    `);
     return sendCSVResponse(res, "Complete_College_Report", rows);
   } catch (error) {
     console.error("[REPORTS /excel ERROR]:", error);
@@ -242,9 +280,18 @@ router.get("/excel", async (req, res) => {
 
 router.get("/pdf", async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT CONCAT('STU-', LPAD(id, 4, '0')) AS Student_ID, name AS Name, email AS Email, department AS Department, created_at AS Registered_Date FROM students ORDER BY id DESC"
-    );
+    const [rows] = await db.query(`
+      SELECT 
+        CONCAT('STU-', LPAD(s.id, 4, '0')) AS Student_ID, 
+        s.name AS Name, 
+        s.email AS Email, 
+        COALESCE(p.course, 'Information Technology') AS Department, 
+        s.created_at AS Registered_Date 
+      FROM students s
+      LEFT JOIN profiles p ON p.student_id = s.id
+      WHERE s.role = 'student' OR s.role IS NULL
+      ORDER BY s.id DESC
+    `);
     return sendPDFResponse(res, "Complete College Directory Report", rows);
   } catch (error) {
     console.error("[REPORTS /pdf ERROR]:", error);
